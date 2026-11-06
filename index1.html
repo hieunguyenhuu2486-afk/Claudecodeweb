@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bánh căn – Bánh xèo Bảy · Phan Thiết</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff9e6;--card:#fff;--ink:#1a1a1a;--mute:#6a5f3c;--y:#f4b400;--yd:#c98f00;--r:#c62828;--rd:#8e1a1a;--g:#2e7d32;--gd:#1b5e20;--line:#f2dc95;--dk:#1a1a1a;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15120a;--card:#241e0d;--ink:#fff3cf;--mute:#cdbf8d;--line:#4a3d12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15120a;--card:#241e0d;--ink:#fff3cf;--mute:#cdbf8d;--line:#4a3d12;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Be Vietnam Pro",system-ui,sans-serif;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1000px;margin:0 auto;padding:0 18px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--dk);color:#fff3cf;box-shadow:0 4px 0 var(--y)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;padding-bottom:10px}
+.logo{font-weight:800;font-size:17px;line-height:1.1;color:var(--y)}.logo small{display:block;font-weight:600;font-size:10px;letter-spacing:.16em;color:#fff3cf}
+nav{display:flex;gap:6px}nav a{padding:8px 16px;border-radius:99px;font-weight:600;font-size:14px;transition:.25s}
+nav a:hover{background:#3a3310}nav a.on{background:var(--y);color:#1a1a1a}
+.btn{display:inline-block;padding:14px 26px;border-radius:14px;font:inherit;font-weight:800;cursor:pointer;border:0;color:#fff;position:relative;transition:transform .15s,box-shadow .15s;transform:translateY(0)}
+.b-r{background:var(--r);box-shadow:0 6px 0 var(--rd),0 12px 20px rgba(142,26,26,.35)}
+.b-y{background:var(--y);color:#1a1a1a;box-shadow:0 6px 0 var(--yd),0 12px 20px rgba(201,143,0,.4)}
+.b-g{background:var(--g);box-shadow:0 6px 0 var(--gd),0 12px 20px rgba(27,94,32,.35)}
+.b-k{background:var(--dk);box-shadow:0 6px 0 #000,0 12px 20px rgba(0,0,0,.35)}
+.btn:hover{transform:translateY(-3px)}.btn:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.hero{background:radial-gradient(circle at 80% 20%,#ffd24d 0,transparent 45%),linear-gradient(135deg,#f4b400 0%,#e89c00 55%,#c62828 140%);color:#1a1a1a;padding:54px 0 78px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:34px;background:var(--bg);clip-path:ellipse(60% 100% at 50% 100%)}
+.hero .wrap{position:relative;z-index:2}
+.tag{display:inline-block;background:#1a1a1a;color:var(--y);padding:5px 14px;border-radius:99px;font-size:12px;font-weight:600;letter-spacing:.08em}
+.hero h1{font-size:clamp(34px,7.4vw,62px);line-height:1.04;margin:12px 0;font-weight:800;letter-spacing:-.02em}
+.hero h1 em{font-style:normal;color:#fff;text-shadow:0 3px 0 var(--rd)}
+.hero p{max-width:500px;margin:0 0 26px;font-size:17px}.cta{display:flex;gap:14px;flex-wrap:wrap}
+.float{position:absolute;right:4%;top:50%;font-size:clamp(100px,19vw,200px);transform:translateY(-50%) rotate(-8deg);filter:drop-shadow(0 18px 14px rgba(0,0,0,.3));animation:fl 4s ease-in-out infinite;z-index:1}
+@keyframes fl{50%{transform:translateY(-58%) rotate(-3deg)}}
+section{padding:44px 0}h2{font-size:28px;margin:0 0 6px;font-weight:800}h2 i{font-style:normal;color:var(--r)}.sub{color:var(--mute);margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;perspective:900px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;overflow:hidden;transition:transform .2s,box-shadow .3s;box-shadow:0 8px 0 var(--line),0 16px 28px rgba(0,0,0,.08);transform-style:preserve-3d;will-change:transform}
+.card:hover{box-shadow:0 8px 0 var(--y),0 22px 34px rgba(0,0,0,.16)}
+.ph{height:128px;display:grid;place-items:center;font-size:56px;background:linear-gradient(135deg,#ffe08a,#f4b400)}.ph.r{background:linear-gradient(135deg,#f7b8b3,#c62828)}.ph.g{background:linear-gradient(135deg,#bfe0c1,#2e7d32)}
+.in{padding:14px 18px 18px}.card h3{margin:0 0 4px;font-size:18px}.card p{margin:0;color:var(--mute);font-size:14px}.card .lnk{display:inline-block;margin-top:8px;font-weight:600;color:var(--r);font-size:14px}
+.band{background:var(--dk);color:#fff3cf}.band .sub{color:#d9cc9a}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;counter-reset:s}
+.steps div{background:#2a2410;border:2px solid #4a3d12;border-radius:18px;padding:18px;counter-increment:s}
+.steps div::before{content:counter(s);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--y);color:#1a1a1a;font-weight:800;margin-bottom:10px;box-shadow:0 4px 0 var(--yd)}
+.vids{display:flex;gap:14px;overflow-x:auto;padding:6px 4px 18px;scroll-snap-type:x mandatory}
+.vid{flex:none;width:190px;aspect-ratio:9/14;border-radius:20px;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;color:#fff;position:relative;overflow:hidden;transition:transform .25s;box-shadow:0 8px 0 rgba(0,0,0,.25)}
+.vid:hover{transform:translateY(-6px) rotateX(4deg)}.vid.t{background:linear-gradient(160deg,#1a1a1a,#c62828)}.vid.y{background:linear-gradient(160deg,#c62828,#f4b400)}
+.vid .pl{position:absolute;top:36%;left:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;background:#fff;color:#c62828;display:grid;place-items:center;font-size:24px;padding-left:4px}
+.vid b{font-size:14px}.vid small{opacity:.85}
+.soc{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.soc .btn{text-align:center;padding:14px 10px}
+.rev{background:var(--card);border:2px dashed var(--y);border-radius:20px;padding:22px;text-align:center}.rev p{max-width:520px;margin:8px auto 16px;color:var(--mute)}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}.info .in{display:flex;gap:12px}.info b{display:block}.info span.e{font-size:26px}
+.note{font-size:13px;color:var(--mute);margin-top:14px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 14px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);background:var(--bg);z-index:4}
+.tabs button{flex:none;padding:9px 18px;border-radius:99px;border:2px solid var(--dk);background:var(--card);color:var(--ink);font:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:.2s}
+.tabs button.on{background:var(--y);color:#1a1a1a;box-shadow:0 4px 0 var(--yd);transform:translateY(-2px)}
+.item{display:flex;gap:14px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:10px;margin-bottom:12px;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 0 var(--line)}
+.item:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--y)}
+.item .ph{width:86px;height:86px;flex:none;border-radius:14px;font-size:38px}.item .t{flex:1;min-width:0}.item h3{margin:0;font-size:16px}.item .d{color:var(--mute);font-size:13px}
+.price{font-weight:800;color:var(--r)}.qty{display:flex;align-items:center;gap:10px;margin-top:6px}
+.qty button{width:34px;height:34px;border-radius:50%;border:0;background:var(--y);color:#1a1a1a;font-weight:800;font-size:19px;cursor:pointer;line-height:1;box-shadow:0 3px 0 var(--yd);transition:.12s}
+.qty button:active{transform:translateY(3px);box-shadow:none}.qty span{min-width:20px;text-align:center;font-weight:800}
+.bar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);margin-top:16px;background:var(--dk);color:#fff3cf;border-radius:18px;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;border:2px solid var(--y)}
+.bar b{color:var(--y);font-size:20px}.bar .clr{background:none;border:0;color:#fff3cf;text-decoration:underline;cursor:pointer;font:inherit}
+footer{background:var(--dk);color:#fff3cf;padding:26px 0 90px;text-align:center;font-size:14px;border-top:5px solid var(--y)}
+.v{display:none}.v.on{display:block;animation:in .45s}@keyframes in{from{opacity:0;transform:translateY(10px)}}
+.rv{opacity:0;transform:translateY(24px);transition:.6s}.rv.show{opacity:1;transform:none}
+#cb{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:50}
+#cbBtn{width:62px;height:62px;border-radius:50%;border:0;background:var(--r);color:#fff;font-size:28px;cursor:pointer;box-shadow:0 6px 0 var(--rd),0 12px 22px rgba(0,0,0,.3);animation:bn 3s infinite}
+@keyframes bn{0%,90%,100%{transform:none}95%{transform:translateY(-8px)}}
+#cbBox{display:none;position:absolute;right:0;bottom:78px;width:min(340px,calc(100vw - 32px));background:var(--card);border:2px solid var(--dk);border-radius:22px;overflow:hidden;box-shadow:0 14px 36px rgba(0,0,0,.3)}
+#cbBox.on{display:block;animation:in .3s}
+.ch{background:var(--y);color:#1a1a1a;padding:12px 16px;font-weight:800;display:flex;justify-content:space-between}.ch button{background:none;border:0;font-size:20px;cursor:pointer;color:inherit}
+#msgs{height:240px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:9px 13px;border-radius:16px;font-size:14px;white-space:pre-line}.m.b{background:var(--line);color:var(--ink);border-bottom-left-radius:4px}.m.u{background:var(--dk);color:#fff3cf;align-self:flex-end;border-bottom-right-radius:4px}
+#chips{display:flex;gap:6px;overflow-x:auto;padding:0 12px 8px}#chips button{flex:none;padding:6px 12px;border-radius:99px;border:1.5px solid var(--y);background:var(--card);color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}
+#cf{display:flex;gap:6px;padding:10px;border-top:2px solid var(--line)}#cf input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}#cf button{border:0;background:var(--g);color:#fff;border-radius:12px;padding:0 14px;font-weight:800;cursor:pointer}
+#vm{display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:16px}#vm.on{display:flex;animation:in .25s}
+.vb{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}.vb iframe{border:0;border-radius:18px;background:#000;height:min(74vh,640px);aspect-ratio:9/16;max-width:92vw}
+#vx{position:absolute;top:-14px;right:-14px;width:38px;height:38px;border-radius:50%;border:0;background:var(--y);font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 var(--yd);z-index:2}#vo{color:#fff3cf;font-size:13px;text-decoration:underline}
+#om{display:none;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.6);align-items:flex-end;justify-content:center}#om.on{display:flex;animation:in .25s}
+.sheet{position:relative;background:var(--card);width:min(520px,100%);max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 20px);border:2px solid var(--dk)}
+.xx{position:absolute;top:10px;right:12px;border:0;background:none;font-size:26px;color:var(--ink);cursor:pointer}
+.seg{display:flex;gap:6px;margin:10px 0}.seg button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid var(--dk);background:var(--card);color:var(--ink);font:inherit;font-weight:600;font-size:13px;cursor:pointer}.seg button.on{background:var(--y);color:#1a1a1a}
+.sheet label{display:block;font-size:13px;font-weight:600;margin:10px 0}.sheet input,.sheet textarea{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+#os{white-space:pre-wrap;background:var(--bg);border:2px dashed var(--y);border-radius:12px;padding:10px;font-size:13px;line-height:1.5;font-family:inherit;margin:10px 0}.warn{color:var(--r);font-weight:600;font-size:14px;margin:6px 0}.btn:disabled{opacity:.4;pointer-events:none}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="#trang-chu">Bánh căn – Bánh xèo Bảy<small>PHAN THIẾT · NÓNG GIÒN MỖI NGÀY</small></a>
+<nav><a href="#trang-chu" data-n="trang-chu">Trang chủ</a><a href="#menu" data-n="menu">Menu</a></nav></div></header>
+<main>
+<div class="v" id="v-trang-chu">
+<div class="hero"><div class="wrap"><span class="tag">BÁNH XÈO MIỀN TRUNG · BÁNH CĂN</span>
+<h1>Bánh <em>nóng giòn</em>,<br>đổ tại chỗ, ăn liền tay.</h1>
+<p>Bánh căn xèo xèo trên khuôn, bánh xèo miền Trung vàng giòn cuốn rau sống, cá kho rục xương và ly nước mía mát lạnh giữa Phan Thiết.</p>
+<div class="cta"><a class="btn b-r" href="#menu">Xem menu</a><a class="btn b-k" href="tel:0918450223">Gọi 0918 450 223</a></div></div>
+<div class="float" aria-hidden="true">🥞</div></div>
+
+<section><div class="wrap rv"><h2>Món <i>nên thử</i></h2><p class="sub">Chạm “Xem ảnh” để xem hình thật trên Fanpage của quán.</p>
+<div class="grid">
+<div class="card tilt"><div class="ph">🍳</div><div class="in"><h3>Bánh căn trứng</h3><p>Bột gạo xay nhuyễn, đổ nóng, thêm trứng đánh bùi thơm. Chấm nước chấm với xoài. Từ 42.000đ.</p><a class="lnk" target="_blank" rel="noopener" href="https://www.facebook.com/photo/?fbid=1333353317427669&set=pcb.1333353390760995">Xem ảnh ›</a></div></div>
+<div class="card tilt"><div class="ph r">🥞</div><div class="in"><h3>Bánh xèo thập cẩm</h3><p>Tôm, mực, thịt. 3 cái vàng giòn, cuốn rau sống. 40.000đ.</p><a class="lnk" target="_blank" rel="noopener" href="https://www.facebook.com/photo/?fbid=1333353127427688&set=pcb.1333353390760995">Xem ảnh ›</a></div></div>
+<div class="card tilt"><div class="ph g">🐟</div><div class="in"><h3>Cá kho rục xương</h3><p>Cá nục kho thật lâu với tỏi, ớt, nước mắm, thấm vị, ăn được cả xương. 17.000đ/con.</p><a class="lnk" target="_blank" rel="noopener" href="https://web.facebook.com/photo/?fbid=1333353077427693&set=pcb.1333353390760995&locale=vi_VN">Xem ảnh ›</a></div></div>
+</div><p style="margin-top:22px"><a class="btn b-g" href="#menu">Xem toàn bộ menu →</a></p></div></section>
+
+<section class="band"><div class="wrap rv"><h2>Ăn bánh căn thế nào cho đã?</h2><p class="sub">Ba bước, ai ăn lần đầu cũng thuộc.</p>
+<div class="steps"><div><b>Chấm</b><br>Bánh căn nóng chấm nước chấm có xíu mại, da heo, trứng.</div><div><b>Thêm xoài, rau</b><br>Xoài và rau sống ăn kèm, chua giòn cân bằng vị béo.</div><div><b>Gọi thêm topping</b><br>Thêm trứng, xíu mại, da heo tùy khẩu vị.</div></div></div></section>
+
+<section><div class="wrap rv"><h2>Video <i>từ quán</i></h2><p class="sub">Vuốt ngang để xem thêm. Bấm vào để xem ngay tại đây.</p>
+<div class="vids">
+<a class="vid t" target="_blank" rel="noopener" data-p="tt:7667779705919065365" href="https://www.tiktok.com/@bnh.cn.bnh.xo.by7/video/7667779705919065365"><div class="pl">▶</div><b>TikTok</b><small>Tìm hiểu thêm về Bảy</small></a>
+<a class="vid t" target="_blank" rel="noopener" data-p="tt:7667754268710997269" href="https://www.tiktok.com/@bnh.cn.bnh.xo.by7/video/7667754268710997269"><div class="pl">▶</div><b>TikTok</b><small>Tìm hiểu thêm về Bảy</small></a>
+<a class="vid y" target="_blank" rel="noopener" data-p="yt:DriqTBROy40" href="https://www.youtube.com/shorts/DriqTBROy40"><div class="pl">▶</div><b>YouTube Shorts</b><small>Xem thêm về Bảy</small></a>
+<a class="vid y" target="_blank" rel="noopener" data-p="yt:ipQWQnZrspQ" href="https://www.youtube.com/shorts/ipQWQnZrspQ"><div class="pl">▶</div><b>YouTube Shorts</b><small>Xem thêm về Bảy</small></a>
+<a class="vid y" target="_blank" rel="noopener" data-p="yt:APMFjX1DgLU" href="https://www.youtube.com/shorts/APMFjX1DgLU"><div class="pl">▶</div><b>YouTube Shorts</b><small>Xem thêm về Bảy</small></a>
+</div></div></section>
+
+<section><div class="wrap rv"><h2>Khách nói <i>gì về Bảy</i></h2><p class="sub">Đọc đánh giá thật của khách đã ăn tại quán.</p>
+<div class="rev"><h3 style="margin:0">Đánh giá và trải nghiệm của khách</h3><p>Cảm ơn quý khách đã đồng hành cùng Bảy. Xem và để lại nhận xét của bạn trên Google Maps hoặc Fanpage.</p>
+<a class="btn b-y" target="_blank" rel="noopener" href="https://maps.app.goo.gl/3yVvRCu99YCZ8PW29">Đánh giá trên Google Maps</a></div></div></section>
+
+<section><div class="wrap rv"><h2>Kết nối <i>với Bảy</i></h2><p class="sub">Theo dõi để xem món mới và ưu đãi.</p>
+<div class="soc">
+<a class="btn b-r" target="_blank" rel="noopener" href="https://maps.app.goo.gl/3yVvRCu99YCZ8PW29">📍 Google Maps</a>
+<a class="btn b-g" target="_blank" rel="noopener" href="https://www.facebook.com/share/1AMLDkWPMi/">👍 Fanpage</a>
+<a class="btn b-k" target="_blank" rel="noopener" href="https://www.tiktok.com/@bnh.cn.bnh.xo.by7">🎵 TikTok</a>
+<a class="btn b-r" target="_blank" rel="noopener" href="https://www.youtube.com/@Banhcan-banhxeoBay">▶ YouTube</a>
+<a class="btn b-y" target="_blank" rel="noopener" href="https://zalo.me/0918450223">💬 Zalo</a></div></div></section>
+
+<section><div class="wrap rv"><h2>Ghé <i>quán</i></h2><p class="sub">Gọi trước nếu đi đông hoặc cần mang đi.</p>
+<div class="info">
+<div class="card"><div class="in"><span class="e">📍</span><div><b>Địa chỉ</b>110 Hà Huy Tập, Khu phố 5, Phường Phan Thiết, Lâm Đồng</div></div></div>
+<div class="card"><div class="in"><span class="e">🕒</span><div><b>Giờ mở cửa</b>11:00 – 21:00 mỗi ngày</div></div></div>
+<div class="card"><div class="in"><span class="e">📞</span><div><b>Điện thoại</b><a href="tel:0918450223"><u>0918 450 223</u></a><br><a href="tel:0975347374"><u>0975 347 374</u></a></div></div></div></div>
+<p class="note">Giao hàng nội thành Phan Thiết và đặt bàn: gọi hoặc nhắn Zalo 0918 450 223. Đơn trên 50 phần vui lòng báo trước.</p></div></section>
+</div>
+
+<div class="v" id="v-menu"><section><div class="wrap"><h2>Thực <i>đơn</i></h2><p class="sub">Chạm “+” để chọn món, rồi bấm “Đặt món”. Nước chấm đã gồm theo từng món.</p>
+<div class="tabs" id="tabs"></div><div id="list"></div>
+<div class="bar" id="bar" hidden><div>Tạm tính: <b id="tot">0đ</b><br><small id="cnt"></small></div><button class="clr" id="clr">Xóa hết</button><button class="btn b-r" id="ob" style="padding:10px 18px">Đặt món</button></div>
+<p class="note">Cần hỗ trợ đặt bàn hoặc đơn lớn: gọi 0918 450 223.</p></div></section></div>
+</main>
+<footer><div class="wrap">Bánh căn – Bánh xèo Bảy · 110 Hà Huy Tập, Phan Thiết · 11:00 – 21:00</div></footer>
+
+<div id="om"><div class="sheet"><button id="oclose" class="xx" aria-label="Đóng">×</button>
+<div id="o1"><h2 style="font-size:22px">Đặt món</h2>
+<div id="seg" class="seg"><button data-t="mang">Mang đi</button><button data-t="giao">Giao tận nơi</button><button data-t="ban">Tại quán</button></div>
+<label>Tên<input id="fn" autocomplete="name"></label><label>Số điện thoại<input id="fp" type="tel" autocomplete="tel"></label>
+<div id="f-mang"><label>Hẹn giờ lấy (bỏ trống nếu lấy ngay)<input id="ft" type="time"></label></div>
+<div id="f-giao" hidden><label>Địa chỉ giao (nội thành Phan Thiết)<input id="fa" autocomplete="street-address"></label><p class="note">Phí ship quán báo sau. Quán sẽ liên hệ xác nhận trước khi giao.</p></div>
+<div id="f-ban" hidden><label>Số bàn<input id="fb" inputmode="numeric"></label></div>
+<label>Ghi chú<input id="fnote" placeholder="Ví dụ: ít cay, thêm rau"></label>
+<pre id="os"></pre><p class="note">Thanh toán khi nhận hàng hoặc tại quán.</p>
+<p id="big" class="warn" hidden>Đơn lớn trên 50 phần: vui lòng gọi 0918 450 223 để hẹn giờ.</p><p id="oerr" class="warn"></p>
+<button class="btn b-r" id="osend">Tạo đơn</button> <a class="btn b-k" href="tel:0918450223">Gọi quán</a></div>
+<div id="o2" hidden><h2 style="font-size:22px">Gửi đơn cho quán</h2><p class="note">Đơn chỉ đến quán khi bạn bấm gửi qua Zalo. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.</p><textarea id="omsg" readonly rows="10"></textarea><p><button class="btn b-g" id="ozalo">Gửi qua Zalo</button> <button class="btn b-y" id="oback">Sửa đơn</button></p></div></div></div>
+<div id="vm"><div class="vb"><button id="vx" aria-label="Đóng video">×</button><iframe id="vf" title="Video của quán" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe><a id="vo" target="_blank" rel="noopener" href="#">Không xem được? Mở trên nền tảng gốc</a></div></div>
+<div id="cb"><div id="cbBox"><div class="ch"><span>🥞 Trợ lý của Bảy</span><button id="cx" aria-label="Đóng">×</button></div><div id="msgs"></div><div id="chips"></div>
+<div id="cf"><input id="ci" placeholder="Hỏi về món, giá, giờ mở cửa…" autocomplete="off"><button id="cs">Gửi</button></div></div>
+<button id="cbBtn" aria-label="Mở trợ lý">💬</button></div>
+
+<script>
+var M=[["Bánh căn","🍳","",[["Combo bánh căn truyền thống","5 cặp, kèm nước chấm (trứng, xíu mại, da heo, xoài)",37000],["Combo bánh căn trứng","5 cặp, kèm nước chấm (trứng, xíu mại, da heo, xoài)",42000],["Bánh căn tôm, mực, trứng","6 cái, nước chấm + xoài + rau sống",32000],["Bánh căn tôm, mực","6 cái, nước chấm + xoài + rau sống",37000],["Bánh căn tôm","6 cái, nước chấm + xoài + rau sống",37000],["Bánh căn mực","6 cái, nước chấm + xoài + rau sống",37000],["Bánh căn hải sản thêm trứng","6 cái, nước chấm + xoài + rau sống",42000]]],
+["Bánh xèo","🥞","r",[["Bánh xèo miền Trung thập cẩm","Tôm, mực, thịt. 3 cái",40000]]],
+["Topping","🥚","",[["Trứng gà, vịt","Giá mỗi trứng",6000],["Xíu mại","Giá mỗi viên",8000],["Da heo","Giá mỗi miếng",3000],["Tô chấm đầy đủ","Nước chấm, xíu mại, da heo, trứng, xoài",16000]]],
+["Cá kho","🐟","g",[["Cá kho rục xương","Giá mỗi con",17000]]],
+["Thức uống","🥤","g",[["Nước mía","",10000],["Rau má","",10000],["Nước ngọt","Các loại",12000]]]];
+var cur="Tất cả",q={},$=function(i){return document.getElementById(i)};
+function f(n){return n.toLocaleString("vi-VN")+"đ"}
+function tabs(){$("tabs").innerHTML=["Tất cả"].concat(M.map(function(c){return c[0]})).map(function(x){return '<button class="'+(x==cur?"on":"")+'" data-t="'+x+'">'+x+'</button>'}).join("")}
+function list(){var h="";M.forEach(function(c,ci){if(cur!="Tất cả"&&cur!=c[0])return;c[3].forEach(function(it,ii){var k=ci+"-"+ii;
+h+='<div class="item"><div class="ph '+c[2]+'">'+c[1]+'</div><div class="t"><h3>'+it[0]+'</h3><div class="d">'+it[1]+'</div><div class="price">'+f(it[2])+'</div><div class="qty"><button data-k="'+k+'" data-d="-1" aria-label="Bớt">−</button><span>'+(q[k]||0)+'</span><button data-k="'+k+'" data-d="1" aria-label="Thêm">+</button></div></div></div>'})});
+$("list").innerHTML=h;sum()}
+function sum(){var s=0,c=0;Object.keys(q).forEach(function(k){var p=k.split("-"),n=q[k];if(n>0){s+=M[p[0]][3][p[1]][2]*n;c+=n}});$("bar").hidden=c==0;$("tot").textContent=f(s);$("cnt").textContent=c+" phần"}
+$("tabs").onclick=function(e){var t=e.target.getAttribute("data-t");if(t){cur=t;tabs();list()}};
+$("list").onclick=function(e){var k=e.target.getAttribute("data-k");if(!k)return;q[k]=Math.max(0,(q[k]||0)+Number(e.target.getAttribute("data-d")));list()};
+$("clr").onclick=function(){q={};list()};
+function route(){var h=(location.hash||"#trang-chu").slice(1);if(h!="menu")h="trang-chu";$("v-trang-chu").className="v"+(h=="trang-chu"?" on":"");$("v-menu").className="v"+(h=="menu"?" on":"");
+document.querySelectorAll("nav a").forEach(function(a){a.className=a.getAttribute("data-n")==h?"on":""});window.scrollTo(0,0);reveal()}
+function reveal(){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("show");io.unobserve(e.target)}})},{threshold:.12});
+document.querySelectorAll(".rv:not(.show)").forEach(function(el){io.observe(el)})}
+document.addEventListener("pointermove",function(e){var c=e.target.closest&&e.target.closest(".tilt");if(!c||e.pointerType=="touch")return;var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform="rotateY("+x*10+"deg) rotateX("+-y*10+"deg) translateY(-4px)"});
+document.addEventListener("pointerout",function(e){var c=e.target.closest&&e.target.closest(".tilt");if(c)c.style.transform=""});
+/* Trợ lý trả lời theo từ khóa */
+function nz(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d")}
+var K=[[/gio|mo cua|dong cua|may gio/,"Quán mở cửa 11:00 – 21:00 mỗi ngày."],
+[/dia chi|o dau|duong|cho nao|ban do|map/,"Quán ở 110 Hà Huy Tập, Khu phố 5, Phường Phan Thiết, Lâm Đồng. Mở Google Maps: https://maps.app.goo.gl/3yVvRCu99YCZ8PW29"],
+[/dat ban|ship|giao|mang di|takeaway|zalo|sdt|so dien thoai|goi|lien he|hotline/,"Đặt bàn, giao hàng nội thành Phan Thiết và mang đi: gọi hoặc nhắn Zalo 0918 450 223 (hoặc 0975 347 374). Đơn trên 50 phần vui lòng báo trước."],
+[/menu|thuc don|co mon gi|mon gi|an gi|goi y|nen thu/,"Quán có bánh căn, bánh xèo miền Trung, cá kho rục xương, topping và nước. Món nên thử: bánh căn trứng 42.000đ, bánh xèo thập cẩm 40.000đ. Xem đầy đủ ở mục Menu."],
+[/ca kho/,"Cá kho rục xương 17.000đ/con, kho lâu nên ăn được cả xương."],[/dat|tien|bao nhieu/,""]];
+function ans(t){var n=nz(t),i,j,it,hit=[];
+M.forEach(function(c){c[3].forEach(function(x){var w=nz(x[0]);if(n.indexOf(w)>-1||(w.split(/[ ,]+/).length<3&&n.indexOf(w)>-1))hit.push(x)})});
+if(/nuoc mia/.test(n))hit.push(M[4][3][0]);if(/rau ma/.test(n))hit.push(M[4][3][1]);if(/nuoc ngot/.test(n))hit.push(M[4][3][2]);
+if(/xeo/.test(n))hit.push(M[1][3][0]);if(/xiu mai/.test(n))hit.push(M[2][3][1]);if(/da heo/.test(n))hit.push(M[2][3][2]);if(/trung/.test(n)&&!/can/.test(n))hit.push(M[2][3][0]);
+if(/gia|bao nhieu|nhieu tien/.test(n)&&/can/.test(n)&&!hit.length)return "Bánh căn: truyền thống 37.000đ, căn trứng 42.000đ, căn tôm/mực/tôm mực 37.000đ, căn tôm mực trứng 32.000đ, hải sản thêm trứng 42.000đ.";
+if(hit.length){var s=[];hit.slice(0,4).forEach(function(x){if(s.indexOf(x[0]+": "+f(x[2]))<0)s.push(x[0]+": "+f(x[2]))});return s.join("\n")}
+for(i=0;i<K.length;i++)if(K[i][1]&&K[i][0].test(n))return K[i][1];
+return "Mình chưa rõ câu này. Bạn hỏi giúp về món, giá, giờ mở cửa, địa chỉ hoặc đặt bàn nhé, hoặc gọi 0918 450 223 để được tư vấn ngay."}
+function say(t,c){var d=document.createElement("div");d.className="m "+c;d.textContent=t;$("msgs").appendChild(d);$("msgs").scrollTop=9e4}
+function ask(t){t=t.trim();if(!t)return;say(t,"u");setTimeout(function(){say(ans(t),"b")},350)}
+["Giờ mở cửa","Địa chỉ","Menu và giá","Bánh căn bao nhiêu?","Đặt bàn, giao hàng"].forEach(function(x){var b=document.createElement("button");b.textContent=x;b.onclick=function(){ask(x)};$("chips").appendChild(b)});
+say("Chào bạn, mình là trợ lý của Bảy. Bạn muốn hỏi món, giá, giờ mở cửa hay đặt bàn?","b");
+$("cbBtn").onclick=function(){$("cbBox").classList.toggle("on")};$("cx").onclick=function(){$("cbBox").classList.remove("on")};
+$("cs").onclick=function(){ask($("ci").value);$("ci").value=""};$("ci").onkeydown=function(e){if(e.key=="Enter"){ask($("ci").value);$("ci").value=""}};
+var T="mang";
+function qtyMain(){var n=0;Object.keys(q).forEach(function(k){var p=k.split("-");if(q[k]>0&&(p[0]=="0"||p[0]=="1"))n+=q[k]});return n}
+function lines(){var a=[],s=0;Object.keys(q).forEach(function(k){var p=k.split("-"),n=q[k];if(n>0){var it=M[p[0]][3][p[1]];a.push(n+" x "+it[0]+" = "+f(it[2]*n));s+=it[2]*n}});return {a:a,s:s}}
+function seg(){document.querySelectorAll("#seg button").forEach(function(b){b.className=b.getAttribute("data-t")==T?"on":""});$("f-mang").hidden=T!="mang";$("f-giao").hidden=T!="giao";$("f-ban").hidden=T!="ban"}
+function oview(){var L=lines(),big=qtyMain()>50;$("os").textContent=L.a.join("\n")+"\nTạm tính: "+f(L.s);$("big").hidden=!big;$("osend").disabled=big;seg()}
+var tb=new URLSearchParams(location.search).get("ban");if(tb){$("fb").value=tb;T="ban"}
+$("ob").onclick=function(){$("o1").hidden=false;$("o2").hidden=true;$("om").classList.add("on");oview()};
+$("seg").onclick=function(e){var t=e.target.getAttribute("data-t");if(t){T=t;seg()}};
+$("oclose").onclick=function(){$("om").classList.remove("on")};
+$("osend").onclick=function(){var n=$("fn").value.trim(),p=$("fp").value.trim();
+if(!n||p.replace(/\D/g,"").length<9){$("oerr").textContent="Vui lòng nhập tên và số điện thoại.";return}
+var L=lines(),m="ĐƠN ĐẶT TỪ WEBSITE\nLoại đơn: ",d="";
+if(T=="mang"){m+="MANG ĐI";d="Lấy: "+($("ft").value?("hẹn lúc "+$("ft").value):"ngay khi xong")}
+if(T=="giao"){var a=$("fa").value.trim();if(!a){$("oerr").textContent="Vui lòng nhập địa chỉ giao hàng.";return}m+="GIAO TẬN NƠI";d="Địa chỉ: "+a+"\nPhí ship: quán báo sau"}
+if(T=="ban"){var b=$("fb").value.trim();if(!b){$("oerr").textContent="Vui lòng nhập số bàn.";return}m+="ĂN TẠI QUÁN";d="Bàn số: "+b}
+m+="\nTên: "+n+"\nSĐT: "+p+"\n"+d+"\n\nMón:\n"+L.a.join("\n")+"\nTạm tính: "+f(L.s)+(T=="giao"?" (chưa gồm phí ship)":"")+"\nThanh toán: khi nhận hàng hoặc tại quán"+($("fnote").value?"\nGhi chú: "+$("fnote").value:"");
+$("oerr").textContent="";$("omsg").value=m;$("o1").hidden=true;$("o2").hidden=false};
+$("ozalo").onclick=function(){try{navigator.clipboard.writeText($("omsg").value)}catch(e){}window.open("https://zalo.me/0918450223","_blank")};
+$("oback").onclick=function(){$("o1").hidden=false;$("o2").hidden=true};
+function vclose(){$("vm").classList.remove("on");$("vf").src="about:blank"}
+document.querySelectorAll(".vid").forEach(function(a){a.onclick=function(e){e.preventDefault();var p=a.getAttribute("data-p").split(":");$("vf").src=p[0]=="yt"?"https://www.youtube-nocookie.com/embed/"+p[1]+"?autoplay=1&rel=0&playsinline=1":"https://www.tiktok.com/embed/"+p[1];$("vo").href=a.href;$("vm").classList.add("on")}});
+$("vx").onclick=vclose;$("vm").onclick=function(e){if(e.target==$("vm"))vclose()};document.addEventListener("keydown",function(e){if(e.key=="Escape")vclose()});
+window.addEventListener("hashchange",function(){vclose();route()});tabs();list();route();
+</script>
+</body>
+</html>
