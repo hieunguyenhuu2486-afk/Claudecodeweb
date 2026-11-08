@@ -87,11 +87,13 @@ footer{background:var(--dk);color:#fff3cf;padding:26px 0 90px;text-align:center;
 .seg{display:flex;gap:6px;margin:10px 0}.seg button{flex:1;padding:10px 4px;border-radius:12px;border:2px solid var(--dk);background:var(--card);color:var(--ink);font:inherit;font-weight:600;font-size:13px;cursor:pointer}.seg button.on{background:var(--y);color:#1a1a1a}
 .sheet label{display:block;font-size:13px;font-weight:600;margin:10px 0}.sheet input,.sheet textarea{display:block;width:100%;margin-top:4px;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
 #os{white-space:pre-wrap;background:var(--bg);border:2px dashed var(--y);border-radius:12px;padding:10px;font-size:13px;line-height:1.5;font-family:inherit;margin:10px 0}.warn{color:var(--r);font-weight:600;font-size:14px;margin:6px 0}.btn:disabled{opacity:.4;pointer-events:none}
+nav button{padding:8px 12px;border-radius:99px;font-weight:600;font-size:13px;font-family:inherit;background:none;border:0;color:inherit;cursor:pointer;transition:.25s}nav button:hover{background:#3a3310}header .wrap{flex-wrap:wrap}nav{gap:2px}
+.ho{border:2px solid var(--line);border-radius:14px;padding:10px 12px;margin:10px 0}.ho .d{font-size:13px;color:var(--mute)}.st{margin-top:6px;font-size:14px}.sm{padding:8px 14px;font-size:13px;box-shadow:0 4px 0 rgba(0,0,0,.3);margin:6px 6px 0 0}.st input{width:130px;padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
 </style>
 </head>
 <body>
 <header><div class="wrap"><a class="logo" href="#trang-chu">Bánh căn – Bánh xèo Bảy<small>PHAN THIẾT · NÓNG GIÒN MỖI NGÀY</small></a>
-<nav><a href="#trang-chu" data-n="trang-chu">Trang chủ</a><a href="#menu" data-n="menu">Menu</a></nav></div></header>
+<nav><a href="#trang-chu" data-n="trang-chu">Trang chủ</a><a href="#menu" data-n="menu">Menu</a><button id="mo">Đơn của tôi</button></nav></div></header>
 <main>
 <div class="v" id="v-trang-chu">
 <div class="hero"><div class="wrap"><span class="tag">BÁNH XÈO MIỀN TRUNG · BÁNH CĂN</span>
@@ -151,13 +153,15 @@ footer{background:var(--dk);color:#fff3cf;padding:26px 0 90px;text-align:center;
 <div id="seg" class="seg"><button data-t="mang">Mang đi</button><button data-t="giao">Giao tận nơi</button><button data-t="ban">Tại quán</button></div>
 <label>Tên<input id="fn" autocomplete="name"></label><label>Số điện thoại<input id="fp" type="tel" autocomplete="tel"></label>
 <div id="f-mang"><label>Hẹn giờ lấy (bỏ trống nếu lấy ngay)<input id="ft" type="time"></label></div>
-<div id="f-giao" hidden><label>Địa chỉ giao (nội thành Phan Thiết)<input id="fa" autocomplete="street-address"></label><p class="note">Phí ship quán báo sau. Quán sẽ liên hệ xác nhận trước khi giao.</p></div>
-<div id="f-ban" hidden><label>Số bàn<input id="fb" inputmode="numeric"></label></div>
+<div id="f-giao" hidden><label>Địa chỉ giao (nội thành Phan Thiết)<input id="fa" autocomplete="street-address" list="dl-a"></label><p class="note">Phí ship quán báo sau. Quán sẽ liên hệ xác nhận trước khi giao.</p></div>
+<div id="f-ban" hidden><label>Số bàn<input id="fb" inputmode="numeric" list="dl-b"></label></div>
 <label>Ghi chú<input id="fnote" placeholder="Ví dụ: ít cay, thêm rau"></label>
 <pre id="os"></pre><p class="note">Thanh toán khi nhận hàng hoặc tại quán.</p>
 <p id="big" class="warn" hidden>Đơn lớn trên 50 phần: vui lòng gọi 0918 450 223 để hẹn giờ.</p><p id="oerr" class="warn"></p>
 <button class="btn b-r" id="osend">Tạo đơn</button> <a class="btn b-k" href="tel:0918450223">Gọi quán</a></div>
-<div id="o2" hidden><h2 id="o2t" style="font-size:22px">Gửi đơn cho quán</h2><p class="note" id="o2n">Đơn chỉ đến quán khi bạn bấm gửi qua Zalo. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.</p><textarea id="omsg" readonly rows="10"></textarea><p><button class="btn b-g" id="ozalo">Gửi qua Zalo</button> <button class="btn b-y" id="oback">Sửa đơn</button></p></div></div></div>
+<div id="o2" hidden><h2 id="o2t" style="font-size:22px">Gửi đơn cho quán</h2><p class="note" id="o2n">Đơn chỉ đến quán khi bạn bấm gửi qua Zalo. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.</p><textarea id="omsg" readonly rows="10"></textarea><p><button class="btn b-g" id="ozalo">Gửi qua Zalo</button> <button class="btn b-y" id="oback">Sửa đơn</button><button class="btn b-y" id="oh" hidden>Xem đơn của tôi</button></p></div>
+<div id="o3" hidden><h2 style="font-size:22px">Đơn của tôi</h2><div id="hl"></div><p class="note">Lịch sử chỉ lưu trên máy này. <a href="#" id="hx" style="text-decoration:underline">Xóa thông tin đã lưu</a></p></div>
+<datalist id="dl-a"></datalist><datalist id="dl-b"></datalist></div></div>
 <div id="vm"><div class="vb"><button id="vx" aria-label="Đóng video">×</button><iframe id="vf" title="Video của quán" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe><a id="vo" target="_blank" rel="noopener" href="#">Không xem được? Mở trên nền tảng gốc</a></div></div>
 <div id="cb"><div id="cbBox"><div class="ch"><span>🥞 Trợ lý của Bảy</span><button id="cx" aria-label="Đóng">×</button></div><div id="msgs"></div><div id="chips"></div>
 <div id="cf"><input id="ci" placeholder="Hỏi về món, giá, giờ mở cửa…" autocomplete="off"><button id="cs">Gửi</button></div></div>
@@ -213,7 +217,7 @@ function lines(){var a=[],s=0;Object.keys(q).forEach(function(k){var p=k.split("
 function seg(){document.querySelectorAll("#seg button").forEach(function(b){b.className=b.getAttribute("data-t")==T?"on":""});$("f-mang").hidden=T!="mang";$("f-giao").hidden=T!="giao";$("f-ban").hidden=T!="ban"}
 function oview(){var L=lines(),big=qtyMain()>50;$("os").textContent=L.a.join("\n")+"\nTạm tính: "+f(L.s);$("big").hidden=!big;$("osend").disabled=big;seg()}
 var tb=new URLSearchParams(location.search).get("ban");if(tb){$("fb").value=tb;T="ban"}
-$("ob").onclick=function(){$("o1").hidden=false;$("o2").hidden=true;$("om").classList.add("on");oview()};
+$("ob").onclick=function(){$("o1").hidden=false;$("o2").hidden=true;$("o3").hidden=true;prefill();$("om").classList.add("on");oview()};
 $("seg").onclick=function(e){var t=e.target.getAttribute("data-t");if(t){T=t;seg()}};
 $("oclose").onclick=function(){$("om").classList.remove("on")};
 $("osend").onclick=function(){var n=$("fn").value.trim(),p=$("fp").value.trim();
@@ -224,15 +228,44 @@ if(T=="giao"){var a=$("fa").value.trim();if(!a){$("oerr").textContent="Vui lòng
 if(T=="ban"){var b=$("fb").value.trim();if(!b){$("oerr").textContent="Vui lòng nhập số bàn.";return}m+="ĂN TẠI QUÁN";d="Bàn số: "+b}
 m+="\nTên: "+n+"\nSĐT: "+p+"\n"+d+"\n\nMón:\n"+L.a.join("\n")+"\nTạm tính: "+f(L.s)+(T=="giao"?" (chưa gồm phí ship)":"")+"\nThanh toán: khi nhận hàng hoặc tại quán"+($("fnote").value?"\nGhi chú: "+$("fnote").value:"");
 var pl={token:SHEET_TOKEN,loai:T=="mang"?"MANG ĐI":T=="giao"?"GIAO":"TẠI QUÁN",ten:n,sdt:p,ban:T=="ban"?$("fb").value.trim():"",gio:T=="mang"?$("ft").value:"",diachi:T=="giao"?$("fa").value.trim():"",mon:L.a.join("; "),phan:qtyMain(),tong:L.s,ghichu:$("fnote").value};
-$("oerr").textContent="";$("omsg").value=m;
-function show(ok,t,note){$("o1").hidden=true;$("o2").hidden=false;$("o2t").textContent=t;$("o2n").textContent=note;$("omsg").hidden=ok;$("ozalo").hidden=ok;$("oback").hidden=ok}
+remember(pl);$("oerr").textContent="";$("omsg").value=m;
+function show(ok,t,note){$("o1").hidden=true;$("o2").hidden=false;$("o2t").textContent=t;$("o2n").textContent=note;$("omsg").hidden=ok;$("ozalo").hidden=ok;$("oback").hidden=ok;$("o3").hidden=true;$("oh").hidden=!ok}
 function fb(){show(false,"Gửi đơn cho quán","Đơn chỉ đến quán khi bạn bấm gửi qua Zalo. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.")}
 if(!SHEET_URL){fb();return}
 var bt=$("osend");bt.disabled=true;bt.textContent="Đang gửi…";
 fetch(SHEET_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(pl)}).then(function(r){return r.json()}).then(function(j){bt.disabled=false;bt.textContent="Tạo đơn";
-if(j&&j.ok){q={};list();show(true,"Đã gửi đơn cho quán","Mã đơn: "+j.id+". Quán sẽ liên hệ nếu cần. Cần gấp, gọi 0918 450 223.")}else{show(false,"Chưa gửi được tự động","Bạn gửi đơn qua Zalo giúp quán nhé. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.")}}).catch(function(){bt.disabled=false;bt.textContent="Tạo đơn";show(false,"Chưa gửi được tự động","Bạn gửi đơn qua Zalo giúp quán nhé. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.")})};
+if(j&&j.ok){HI.unshift({id:j.id,loai:pl.loai,t:Date.now(),mon:pl.mon,tong:pl.tong,sdt:pl.sdt,ban:pl.ban});HI=HI.slice(0,10);ls("bay_hi",HI);q={};list();show(true,"Đã gửi đơn cho quán","Mã đơn: "+j.id+". Quán sẽ liên hệ nếu cần. Cần gấp, gọi 0918 450 223.")}else{show(false,"Chưa gửi được tự động","Bạn gửi đơn qua Zalo giúp quán nhé. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.")}}).catch(function(){bt.disabled=false;bt.textContent="Tạo đơn";show(false,"Chưa gửi được tự động","Bạn gửi đơn qua Zalo giúp quán nhé. Nội dung đã tự sao chép, nếu Zalo chưa hiện thì dán vào ô chat.")})};
 $("ozalo").onclick=function(){try{navigator.clipboard.writeText($("omsg").value)}catch(e){}window.open("https://zalo.me/0918450223","_blank")};
 $("oback").onclick=function(){$("o1").hidden=false;$("o2").hidden=true};
+function ls(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){}return null}
+var PR=ls("bay_pr")||{ten:"",sdt:"",dc:[],bs:[]},HI=ls("bay_hi")||[];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function mru(a,v){return v?[v].concat(a.filter(function(x){return x!=v})).slice(0,3):a}
+function remember(pl){PR.ten=pl.ten;PR.sdt=pl.sdt;PR.dc=mru(PR.dc||[],pl.diachi);PR.bs=mru(PR.bs||[],pl.ban);ls("bay_pr",PR)}
+function dl(id,a){$(id).innerHTML=(a||[]).map(function(x){return '<option value="'+esc(x)+'">'}).join("")}
+function prefill(){if(!$("fn").value)$("fn").value=PR.ten||"";if(!$("fp").value)$("fp").value=PR.sdt||"";dl("dl-a",PR.dc);dl("dl-b",PR.bs)}
+function tf(t){return new Date(t).toLocaleString("vi-VN",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"})}
+function stT(s){return s=="Mới"?"Quán đã nhận, đang chờ làm":s=="Khách xin hủy"?"Bạn đã gửi yêu cầu hủy, quán sẽ xác nhận":s=="Hủy"?"Đơn đã hủy":"Quán đã xử lý đơn này"}
+function post(pl){return fetch(SHEET_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(pl)}).then(function(r){return r.json()})}
+function chk(i){var o=HI[i],el=$("st"+i),er="Chưa kiểm tra được. Gọi 0918 450 223 nếu cần.";if(!SHEET_URL){el.textContent=er;return}
+fetch(SHEET_URL+"?t="+encodeURIComponent(SHEET_TOKEN)+"&id="+encodeURIComponent(o.id)+"&sdt="+encodeURIComponent(o.sdt)).then(function(r){return r.json()}).then(function(j){
+if(!j.ok){el.textContent=er;return}
+var h=stT(j.status);
+if(j.status=="Mới"){if(o.loai=="TẠI QUÁN")h+='<br><button class="btn b-y sm" data-a="ban" data-i="'+i+'">Đổi số bàn</button>';else h+='<br><small>Muốn sửa món: hủy đơn rồi đặt lại.</small>';
+h+='<br><button class="btn b-k sm" data-a="huy" data-i="'+i+'">Hủy đơn</button>'}
+else if(j.status!="Hủy"&&j.status!="Khách xin hủy")h+='<br><small>Cần sửa gì, gọi 0918 450 223.</small>';
+el.innerHTML=h}).catch(function(){el.textContent=er})}
+function hist(){$("om").classList.add("on");$("o1").hidden=true;$("o2").hidden=true;$("o3").hidden=false;var h=HI.length?"":'<p class="note">Chưa có đơn nào trên máy này.</p>';
+HI.forEach(function(o,i){h+='<div class="ho"><b>'+esc(o.id)+'</b> · '+esc(o.loai)+(o.ban?" · bàn "+esc(o.ban):"")+'<br><small>'+tf(o.t)+' · '+f(o.tong)+'</small><div class="d">'+esc(o.mon)+'</div><div class="st" id="st'+i+'">'+(i<5?"Đang kiểm tra…":"")+'</div></div>'});
+$("hl").innerHTML=h;HI.slice(0,5).forEach(function(o,i){chk(i)})}
+$("hl").onclick=function(e){var a=e.target.getAttribute("data-a"),i=e.target.getAttribute("data-i");if(!a)return;var o=HI[i],el=$("st"+i);
+if(a=="ban")el.innerHTML='<input id="nb'+i+'" inputmode="numeric" placeholder="Số bàn mới"> <button class="btn b-g sm" data-a="sb" data-i="'+i+'">Lưu</button>';
+if(a=="huy")el.innerHTML='Hủy đơn này?<br><button class="btn b-r sm" data-a="hy" data-i="'+i+'">Có, hủy</button><button class="btn b-y sm" data-a="no" data-i="'+i+'">Không</button>';
+if(a=="no")chk(i);
+if(a=="sb"){var nb=$("nb"+i).value.trim();if(!nb)return;el.textContent="Đang lưu…";post({token:SHEET_TOKEN,action:"doiban",id:o.id,sdt:o.sdt,ban:nb}).then(function(j){if(j.ok){o.ban=nb;ls("bay_hi",HI);PR.bs=mru(PR.bs||[],nb);ls("bay_pr",PR);hist()}else el.textContent=j.err=="da-xu-ly"?"Quán đã xử lý đơn này, gọi 0918 450 223 để đổi bàn.":"Chưa đổi được, gọi 0918 450 223."}).catch(function(){el.textContent="Chưa đổi được, gọi 0918 450 223."})}
+if(a=="hy"){el.textContent="Đang gửi…";post({token:SHEET_TOKEN,action:"huy",id:o.id,sdt:o.sdt}).then(function(j){if(j.ok)chk(i);else el.textContent=j.err=="da-xu-ly"?"Quán đã xử lý đơn này, gọi 0918 450 223.":"Chưa hủy được, gọi 0918 450 223."}).catch(function(){el.textContent="Chưa hủy được, gọi 0918 450 223."})}};
+$("mo").onclick=hist;$("oh").onclick=hist;
+$("hx").onclick=function(e){e.preventDefault();try{localStorage.removeItem("bay_pr");localStorage.removeItem("bay_hi")}catch(x){}PR={ten:"",sdt:"",dc:[],bs:[]};HI=[];hist()};
 function vclose(){$("vm").classList.remove("on");$("vf").src="about:blank"}
 document.querySelectorAll(".vid").forEach(function(a){a.onclick=function(e){e.preventDefault();var p=a.getAttribute("data-p").split(":");$("vf").src=p[0]=="yt"?"https://www.youtube-nocookie.com/embed/"+p[1]+"?autoplay=1&rel=0&playsinline=1":"https://www.tiktok.com/embed/"+p[1];$("vo").href=a.href;$("vm").classList.add("on")}});
 $("vx").onclick=vclose;$("vm").onclick=function(e){if(e.target==$("vm"))vclose()};document.addEventListener("keydown",function(e){if(e.key=="Escape")vclose()});
