@@ -163,7 +163,7 @@ nav button{padding:8px 12px;border-radius:99px;font-weight:600;font-size:13px;fo
 <div id="o3" hidden><h2 style="font-size:22px">Đơn của tôi</h2><div id="hl"></div><p class="note">Lịch sử chỉ lưu trên máy này. <a href="#" id="hx" style="text-decoration:underline">Xóa thông tin đã lưu</a></p></div>
 <datalist id="dl-a"></datalist><datalist id="dl-b"></datalist></div></div>
 <div id="vm"><div class="vb"><button id="vx" aria-label="Đóng video">×</button><iframe id="vf" title="Video của quán" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe><a id="vo" target="_blank" rel="noopener" href="#">Không xem được? Mở trên nền tảng gốc</a></div></div>
-<div id="cb"><div id="cbBox"><div class="ch"><span>🥞 Trợ lý của Bảy</span><button id="cx" aria-label="Đóng">×</button></div><div id="msgs"></div><div id="chips"></div>
+<div id="cb"><div id="cbBox"><div class="ch"><span>🥞 Trợ lý tự động của Bảy</span><button id="cx" aria-label="Đóng">×</button></div><div id="msgs"></div><div id="chips"></div>
 <div id="cf"><input id="ci" placeholder="Hỏi về món, giá, giờ mở cửa…" autocomplete="off"><button id="cs">Gửi</button></div></div>
 <button id="cbBtn" aria-label="Mở trợ lý">💬</button></div>
 
@@ -191,23 +191,77 @@ document.addEventListener("pointermove",function(e){var c=e.target.closest&&e.ta
 document.addEventListener("pointerout",function(e){var c=e.target.closest&&e.target.closest(".tilt");if(c)c.style.transform=""});
 /* Trợ lý trả lời theo từ khóa */
 function nz(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d")}
-var K=[[/gio|mo cua|dong cua|may gio/,"Quán mở cửa 11:00 – 21:00 mỗi ngày."],
-[/dia chi|o dau|duong|cho nao|ban do|map/,"Quán ở 110 Hà Huy Tập, Khu phố 5, Phường Phan Thiết, Lâm Đồng. Mở Google Maps: https://maps.app.goo.gl/3yVvRCu99YCZ8PW29"],
-[/dat ban|ship|giao|mang di|takeaway|zalo|sdt|so dien thoai|goi|lien he|hotline/,"Đặt bàn, giao hàng nội thành Phan Thiết và mang đi: gọi hoặc nhắn Zalo 0918 450 223 (hoặc 0975 347 374). Đơn trên 50 phần vui lòng báo trước."],
-[/menu|thuc don|co mon gi|mon gi|an gi|goi y|nen thu/,"Quán có bánh căn, bánh xèo miền Trung, cá kho rục xương, topping và nước. Món nên thử: bánh căn trứng 42.000đ, bánh xèo thập cẩm 40.000đ. Xem đầy đủ ở mục Menu."],
-[/ca kho/,"Cá kho rục xương 17.000đ/con, kho lâu nên ăn được cả xương."],[/dat|tien|bao nhieu/,""]];
-function ans(t){var n=nz(t),i,j,it,hit=[];
-M.forEach(function(c){c[3].forEach(function(x){var w=nz(x[0]);if(n.indexOf(w)>-1||(w.split(/[ ,]+/).length<3&&n.indexOf(w)>-1))hit.push(x)})});
-if(/nuoc mia/.test(n))hit.push(M[4][3][0]);if(/rau ma/.test(n))hit.push(M[4][3][1]);if(/nuoc ngot/.test(n))hit.push(M[4][3][2]);
-if(/xeo/.test(n))hit.push(M[1][3][0]);if(/xiu mai/.test(n))hit.push(M[2][3][1]);if(/da heo/.test(n))hit.push(M[2][3][2]);if(/trung/.test(n)&&!/can/.test(n))hit.push(M[2][3][0]);
-if(/gia|bao nhieu|nhieu tien/.test(n)&&/can/.test(n)&&!hit.length)return "Bánh căn: truyền thống 37.000đ, căn trứng 42.000đ, căn tôm/mực/tôm mực 37.000đ, căn tôm mực trứng 32.000đ, hải sản thêm trứng 42.000đ.";
-if(hit.length){var s=[];hit.slice(0,4).forEach(function(x){if(s.indexOf(x[0]+": "+f(x[2]))<0)s.push(x[0]+": "+f(x[2]))});return s.join("\n")}
-for(i=0;i<K.length;i++)if(K[i][1]&&K[i][0].test(n))return K[i][1];
-return "Mình chưa rõ câu này. Bạn hỏi giúp về món, giá, giờ mở cửa, địa chỉ hoặc đặt bàn nhé, hoặc gọi 0918 450 223 để được tư vấn ngay."}
-function say(t,c){var d=document.createElement("div");d.className="m "+c;d.textContent=t;$("msgs").appendChild(d);$("msgs").scrollTop=9e4}
-function ask(t){t=t.trim();if(!t)return;say(t,"u");setTimeout(function(){say(ans(t),"b")},350)}
-["Giờ mở cửa","Địa chỉ","Menu và giá","Bánh căn bao nhiêu?","Đặt bàn, giao hàng"].forEach(function(x){var b=document.createElement("button");b.textContent=x;b.onclick=function(){ask(x)};$("chips").appendChild(b)});
-say("Chào bạn, mình là trợ lý của Bảy. Bạn muốn hỏi món, giá, giờ mở cửa hay đặt bàn?","b");
+/* Câu trả lời lấy từ docs/kich-ban-chatbot.md, giá lấy từ M (menu-gia.md) */
+function nq(s){return nz(s).replace(/[,.?!:;]/g," ").replace(/\s+/g," ").trim()}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+var ctx="",R={
+chao:"Dạ Bảy xin chào quý khách 😊 Đây là trợ lý tự động của quán, quý khách cần Bảy hỗ trợ gì ạ?",
+ok:["Dạ cảm ơn quý khách, nếu cần thêm gì quý khách cứ hỏi nhé 😊","Dạ cảm ơn quý khách quan tâm, nếu có thêm thắc mắc thì quý khách cứ nhắn hỏi nhé 😉","Dạ quý khách 😊"],
+khen:["Dạ không có gì ạ, chúc quý khách ngon miệng 🥰","Dạ quán chân thành cảm ơn quý khách ạ, được khách đón nhận và yêu thương là động lực rất lớn đó ạ 🥰","Dạ quán cảm ơn quý khách, lần sau lại ghé Bảy nữa nha 🥰"],
+che:"Dạ quán thành thật xin lỗi quý khách vì đã có trải nghiệm không như mong muốn. Quý khách có thể cho quán biết cụ thể hơn tình trạng và mong muốn của quý khách được không ạ? Quán xin chân thành cảm ơn và mong được phục vụ quý khách tốt hơn lần sau ạ.",
+shipHoi:"Dạ quý khách cần giao trong nội thành Phan Thiết hay ngoài Phan Thiết ạ?",
+shipNoi:"Dạ nội thành Phan Thiết thì quán giao được ạ. Quý khách nhắn Zalo 0918 450 223 để quán chốt đơn và báo phí ship nha.",
+shipNgoai:"Dạ trường hợp này quý khách nhắn trực tiếp Zalo quán 0918 450 223 giúp Bảy nha.",
+shipPhi:"Dạ còn tùy vào xa gần nữa ạ, quý khách nhắn trực tiếp Zalo quán 0918 450 223 nha.",
+cho:"Dạ tùy khung giờ ạ, giờ cao điểm trưa cỡ 11h và tối cỡ 19h thì khoảng 15–20 phút nha. Nếu quý khách đang gấp thì gọi quán hỏi trực tiếp luôn ạ.",
+xe:"Dạ quán có chỗ đậu xe bên đường, xe lớn như ô tô, taxi đi vào thoải mái. Quý khách lưu ý bật chế độ chỉ đường trên Google Maps là xe lớn/ô tô để được hướng dẫn đường cho xe lớn nha.",
+hai:"Dạ quý khách có thể gọi 1 phần bánh xèo, 1 phần bánh căn truyền thống hoặc hải sản là đủ ạ. Ăn hết rồi gọi thêm nha, vì bánh ăn tại quán sẽ ngon hơn mang về. Quý khách đừng quên gọi thêm topping ăn kèm (trứng, xíu mại, da heo) nha.",
+thu:"Dạ bánh căn trứng, bánh căn truyền thống và bánh xèo là những món làm nên tên tuổi của quán, rất đáng để thử ạ.",
+dong:"Dạ quán có sức chứa hơn 80 chỗ ngồi và còn chỗ ngoài trời ạ. Bàn trên 25 người hoặc đoàn đông thì quý khách liên hệ đặt trước giúp Bảy nha.",
+ban:"Dạ đặt bàn quý khách gọi hotline 0918 450 223 (hoặc 0975 347 374) hoặc nhắn Zalo nha, nên gọi luôn vì có khi Zalo bị trôi tin. Trường hợp trên 25 người quý khách gọi quán trước luôn nha.",
+tien:"Dạ quán nhận tiền mặt và chuyển khoản (Visa, nội địa, ví MoMo…) đều được ạ. Riêng quẹt thẻ thì quán chưa có hệ thống xử lý, mong quý khách thông cảm nhen.",
+tet:"Dạ lễ, Tết quán Bảy vẫn bán bình thường nha quý khách. Tết Nguyên Đán quán thường khai trương đầu năm vào Mùng 2 Tết (Âm lịch), quý khách ghé Bảy nha. Các ngày còn lại quý khách gọi hỏi Bảy trước cho chắc ạ.",
+gio:"Dạ quán mở cửa từ 11:00 đến 21:00 ạ.",
+dc:"Dạ quán ở 110 Hà Huy Tập, Khu phố 5, Phường Phan Thiết, Lâm Đồng (Bình Thuận cũ) ạ. Quý khách bấm vào đây để mở bản đồ: https://maps.app.goo.gl/3yVvRCu99YCZ8PW29\nHoặc quý khách tìm tên quán trên Google Maps là có á.",
+xeo:"Dạ bánh xèo miền Trung size nhỏ ạ quý khách, 1 phần 3 cái ạ.",
+con:"Dạ món còn hay hết thì thay đổi theo giờ ạ, quý khách gọi quán 0918 450 223 để biết chính xác nha.",
+dat:"Dạ quý khách vui lòng gọi số 0918 450 223 hoặc nhắn Zalo quán để được hỗ trợ nhanh hơn nha.",
+menu:"Dạ quý khách bấm vào mục Menu ở đầu trang để xem món và giá giúp Bảy nha. Quý khách có thể tham khảo thêm topping ăn kèm bên dưới menu đó ạ.",
+gi:"Dạ quán có bánh căn, bánh xèo miền Trung, cá kho rục xương, topping ăn kèm và nước mía, rau má, nước ngọt ạ. Quý khách xem giá trên menu giúp Bảy nha.",
+lh:"Dạ quý khách gọi 0918 450 223 hoặc 0975 347 374, Zalo thì nhắn số 0918 450 223 nha.",
+ngot:"Dạ nước ngọt khoảng 12.000đ ạ, quý khách xem giá tại quán giúp Bảy nha.",
+khong:"Dạ câu này Bảy chưa trả lời chính xác được ạ. Quý khách gọi 0918 450 223 hoặc nhắn Zalo quán để được hỗ trợ ngay nha."};
+function gia(n){var hit=[],add=function(x){if(hit.indexOf(x)<0)hit.push(x)};
+M.forEach(function(c){c[3].forEach(function(x){if(n.indexOf(nq(x[0]).replace(/^combo /,""))>-1)add(x)})});
+if(/can trung/.test(n))add(M[0][3][1]);if(/truyen thong/.test(n))add(M[0][3][0]);if(/hai san/.test(n))add(M[0][3][6]);
+if(/xeo/.test(n))add(M[1][3][0]);if(/xiu mai/.test(n))add(M[2][3][1]);if(/da heo/.test(n))add(M[2][3][2]);if(/trung/.test(n)&&!/can/.test(n))add(M[2][3][0]);if(/nuoc cham|to cham/.test(n))add(M[2][3][3]);
+if(/ca kho/.test(n))add(M[3][3][0]);if(/nuoc mia|\bmia\b/.test(n))add(M[4][3][0]);if(/rau ma/.test(n))add(M[4][3][1]);if(/nuoc ngot/.test(n))add(M[4][3][2]);
+hit.sort(function(a,b){return b[0].length-a[0].length});
+hit=hit.filter(function(x,i){for(var j=0;j<i;j++)if(nq(hit[j][0]).indexOf(nq(x[0]).replace(/^combo /,""))>-1)return false;return true});
+if(!hit.length&&/\bcan\b/.test(n)&&(/gia|nhieu|menu|phan|loai/.test(n)||n.split(" ").length<4))return "Dạ bánh căn bên Bảy có:\n"+M[0][3].map(function(x){return "• "+x[0]+": "+f(x[2])}).join("\n")+"\nQuý khách xem thêm topping ăn kèm ở mục Menu nha.";
+if(!hit.length)return "";
+if(hit.length==1){var x=hit[0];if(x==M[4][3][2])return R.ngot;return "Dạ "+x[0].charAt(0).toLowerCase()+x[0].slice(1)+" "+f(x[2])+(x[1]?", "+x[1].charAt(0).toLowerCase()+x[1].slice(1):"")+" ạ."}
+return "Dạ Bảy gửi giá nha:\n"+hit.slice(0,5).map(function(x){return "• "+x[0]+": "+f(x[2])}).join("\n")}
+function ans(t){var n=nq(t),lw=t.toLowerCase(),c=ctx,g;ctx="";
+if(c=="ship"){if(/ngoai|xa/.test(n))return R.shipNgoai;if(/noi thanh|trong|phan thiet|\bpt\b|gan/.test(n))return R.shipNoi}
+if(/bao lau|lau khong|lau ko|may phut|thoi gian cho|doi lau khong/.test(n))return R.cho;
+if(/nguội|dở|tệ/.test(lw)||/cho lau|doi lau|lau qua|lau the|lau vay|lau du|banh nguoi|nguoi ngat|nguoi qua|bi nguoi|khong gion|ko gion|k gion|sai mon|thieu mon|nham mon|do qua|te qua|qua te|that vong|buc minh|khong ngon|ko ngon|k ngon|phan nan|thai do|mat ve sinh|chat chem/.test(n))return R.che;
+if(/phi ship|tien ship|ship bao nhieu|ship nhieu|phi giao|gia ship|ship bn/.test(n))return R.shipPhi;
+if(/ship|giao/.test(n)){if(/ngoai/.test(n))return R.shipNgoai;if(/noi thanh/.test(n))return R.shipNoi;ctx="ship";return R.shipHoi}
+if(/dau xe|do xe|de xe|gui xe|o to|oto|xe hoi|bai xe|taxi|xe lon/.test(n))return R.xe;
+if(/(2|hai) nguoi|an sao|goi sao|sao cho du|bao nhieu thi du/.test(n))return R.hai;
+if(/nen an|nen thu|nen goi|lan dau|mon nao|goi y|dac san|signature|ngon nhat|gi ngon|tu van/.test(n))return R.thu;
+if(/bao nhieu cho|suc chua|may cho|di dong|doan|\d\d+ nguoi|rong khong|ngoai troi/.test(n))return R.dong;
+if(/dat ban|con ban|giu ban|dat cho|con cho|het ban/.test(n))return R.ban;
+if(/chuyen khoan|\bck\b|quet the|ca the|momo|visa|thanh toan|tien mat|banking|\bqr\b|tra tien/.test(n))return R.tien;
+if(/\btet\b|ngay le|dip le|nghi le|co nghi|ngay nghi|mung \d|le tet/.test(n))return R.tet;
+if(/may gio|gio nao|mo cua|dong cua|con mo|mo khong|mo chua|gio mo|thoi gian nao|khi nao/.test(n))return R.gio;
+if(/dia chi|o dau|duong nao|cho nao|ban do|\bmap|chi duong|duong di/.test(n))return R.dc;
+if(/xeo/.test(n)&&/nho|lon|\bto\b|size|may cai|bao nhieu cai/.test(n))return R.xeo;
+if(/con khong|con ko|het chua|con mon|het mon/.test(n))return R.con;
+if(/dat mon|dat hang|dat banh|dat \d|cho dat|muon dat|order|mang di|mang ve|dat truoc|\bmua\b/.test(n))return R.dat;
+if(g=gia(n))return g;
+if(/menu|thuc don|bang gia|\bgia\b|bao nhieu/.test(n))return R.menu;
+if(/ban gi|co gi|mon gi|nhung mon|an gi/.test(n))return R.gi;
+if(/zalo|sdt|so dien thoai|hotline|lien he|so may/.test(n))return R.lh;
+if(/ngon|tuyet|xuat sac|ung y|10 diem|qua da|rat thich/.test(n))return pick(R.khen);
+if(/cam on|thank|khong can|ko can|k can|duoc roi|vay thoi|the thoi/.test(n)||/^(ok\w*|uh+m?|um|uk|u|vang|da|khong|ko|k)( a| nha| nhe| ban| quan| shop)?$/.test(n))return pick(R.ok);
+if(/^(hi|hello|helo|alo|chao|xin chao|da chao|quan oi|shop oi|ad oi|bay oi)\b/.test(n))return R.chao;
+return R.khong}
+function say(t,c){var d=document.createElement("div");d.className="m "+c;t.split(/(https?:\/\/\S+)/).forEach(function(p,i){if(i%2){var a=document.createElement("a");a.href=p;a.target="_blank";a.rel="noopener";a.textContent="Mở Google Maps";a.style.cssText="color:inherit;font-weight:700";d.appendChild(a)}else d.appendChild(document.createTextNode(p))});$("msgs").appendChild(d);$("msgs").scrollTop=9e4}
+function ask(t){t=t.trim();if(!t)return;say(t,"u");setTimeout(function(){say(ans(t),"b")},500)}
+["Xin menu","Quán ở đâu?","Giờ mở cửa","Có giao hàng không?","Đặt bàn","Lần đầu nên thử món nào?","Có chỗ đậu ô tô không?"].forEach(function(x){var b=document.createElement("button");b.textContent=x;b.onclick=function(){ask(x)};$("chips").appendChild(b)});
+say(R.chao,"b");
 $("cbBtn").onclick=function(){$("cbBox").classList.toggle("on")};$("cx").onclick=function(){$("cbBox").classList.remove("on")};
 $("cs").onclick=function(){ask($("ci").value);$("ci").value=""};$("ci").onkeydown=function(e){if(e.key=="Enter"){ask($("ci").value);$("ci").value=""}};
 var SHEET_URL="https://script.google.com/macros/s/AKfycbzxNIqKagY1rhaXVHxpSK8hea4nBMa_OV6X6l_EkCnFnx8XedK_l200NJo8H5OO6ubP/exec",SHEET_TOKEN="hieunguyenhuu-liam";/* điền sau khi triển khai Google Sheet */
