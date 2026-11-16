@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Món tạm hết – Quán Bảy</title>
+<!-- Bài 6.4: trang thử Món tạm hết (bảng thuc_don + hàm dat_tam_het). Kế hoạch: docs/ke-hoach-bai-6.md mục 9.
+     Chỉ chứa publishable key (được phép công khai). -->
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#888; --vien:#e5d5bf; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); }
+  header { position:sticky; top:0; z-index:5; padding:12px 16px; background:var(--chu); color:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header h1 { margin:0; font-size:18px; }
+  .nhan { font-size:11px; background:var(--cam); padding:3px 8px; border-radius:99px; white-space:nowrap; }
+  #ketnoi { font-size:12px; color:#ccc; }
+  main { max-width:520px; margin:0 auto; padding:16px; }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:16px; padding:14px 16px; margin-bottom:12px; }
+  h2 { margin:0 0 10px; font-size:20px; }
+  label { display:block; font-weight:700; margin:12px 0 6px; }
+  input { width:100%; font-size:18px; padding:14px; border:2px solid var(--vien); border-radius:12px; }
+  button { font:inherit; border:0; border-radius:12px; cursor:pointer; }
+  button:disabled { opacity:.5; }
+  .chinh { width:100%; margin-top:16px; padding:16px; font-size:18px; font-weight:800; background:var(--xanh); color:#fff; }
+  .loi { margin-top:12px; padding:12px; border-radius:10px; background:#fdecea; color:var(--do); font-weight:700; }
+  .goi-y { font-size:13px; color:var(--xam); }
+  .seg { display:flex; gap:6px; margin-bottom:12px; }
+  .seg button { flex:1; padding:12px; font-weight:800; background:#eee; color:var(--chu); }
+  .seg button.chon { background:var(--chu); color:#fff; }
+  .nhom { font-size:14px; font-weight:800; text-transform:uppercase; color:#7a5a3a; margin:4px 0 6px; }
+  .mon { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1e6d6; }
+  .mon:first-of-type { border-top:0; }
+  .mon .ten { flex:1; }
+  .mon .ten b { display:block; font-size:16px; }
+  .mon.het .ten b { color:var(--xam); text-decoration:line-through; }
+  .gia { font-weight:800; white-space:nowrap; }
+  .tag-het { display:inline-block; margin-top:3px; font-size:12px; font-weight:800; color:#fff; background:var(--do); padding:2px 8px; border-radius:6px; }
+  .nut { padding:10px 12px; font-weight:800; color:#fff; background:var(--do); white-space:nowrap; font-size:14px; }
+  .nut.mo { background:var(--xanh); }
+  .canh { padding:12px; border-radius:10px; background:#fff1e0; color:#a35200; margin-bottom:12px; }
+  .canh a { color:#a35200; font-weight:800; }
+  .bao { position:fixed; left:12px; right:12px; bottom:16px; background:#222; color:#fff; padding:14px; border-radius:12px; font-size:15px; z-index:9; display:none; }
+  .phu { width:100%; margin-top:6px; padding:12px; background:none; color:var(--xam); text-decoration:underline; }
+  .tt { text-align:center; color:var(--xam); padding:30px 0; }
+</style>
+</head>
+<body>
+<header><h1>Món tạm hết</h1><span id="ketnoi"></span><span class="nhan">BÀI 6.4 · THỬ</span></header>
+<main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
+<div class="bao" id="bao"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+<script>
+const URL_KHO = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
+const KHOA_CONG_KHAI = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
+const DUOI_EMAIL = '@nv.banhcanbanhxeobay.id.vn';
+const NHOM = { can: '🥘 Bánh căn', xeo: '🔥 Bánh xèo', topping: '🥚 Topping', ca: '🐟 Cá kho', nuoc: '🥤 Nước' };
+const VAI_TRO = { phuc_vu: 'Phục vụ', xeo: 'Bếp xèo', can: 'Bếp căn', nuoc: 'Quầy nước', quan_ly: 'Quản lý' };
+
+const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
+const man = document.getElementById('man');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const tien = (n) => n.toLocaleString('vi-VN') + 'đ';
+const gio = (ts) => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const luuDoc = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const MAY = luuDoc('quanbay-may');   // mã máy do trang Vào ca tạo
+function bao(chu, ms = 3500) { const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms); }
+
+// "Tạm hết" chỉ tính trong HÔM NAY (giờ Việt Nam) – sang ngày mới tự mở bán lại
+const ngayVN = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+const laHet = (m) => !!m.tam_het_luc && ngayVN(m.tam_het_luc) === ngayVN(Date.now());
+// Gợi ý món thay: cùng nhóm, còn bán, giá gần nhất
+const goiYThay = (m) => S.menu.filter(x => x.nhom === m.nhom && x.ma !== m.ma && x.dang_ban && !laHet(x))
+  .sort((a, b) => Math.abs(a.gia - m.gia) - Math.abs(b.gia - m.gia)).slice(0, 2);
+
+const S = { user: null, nv: null, ca: null, menu: [], che: 'nv' };   // che: 'nv' (nhân viên) | 'khach' (xem như khách)
+
+function veDangNhap(loi) {
+  man.innerHTML = `<form class="the" id="form"><h2>Đăng nhập</h2>
+    <label for="ten">Tên đăng nhập</label><input id="ten" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="vd: lan">
+    <label for="mk">Mật khẩu</label><input id="mk" type="password" autocomplete="current-password">
+    <button class="chinh" id="nut">Đăng nhập</button>${loi ? `<div class="loi">${esc(loi)}</div>` : ''}</form>`;
+  document.getElementById('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const ten = document.getElementById('ten').value.trim().toLowerCase(), mk = document.getElementById('mk').value;
+    if (!/^[a-z0-9_]{2,20}$/.test(ten) || !mk) return veDangNhap('Nhập đúng tên đăng nhập và mật khẩu.');
+    document.getElementById('nut').disabled = true;
+    const { data, error } = await sb.auth.signInWithPassword({ email: ten + DUOI_EMAIL, password: mk });
+    if (error) return veDangNhap((error.message || '').toLowerCase().includes('invalid login') ? 'Sai tên đăng nhập hoặc mật khẩu.' : 'Không đăng nhập được: ' + error.message);
+    batDau(data.user);
+  };
+}
+
+async function batDau(user) {
+  S.user = user;
+  const { data: nv } = await sb.from('nhan_vien').select('ten_hien_thi, dang_lam').eq('id', user.id).maybeSingle();
+  if (!nv || !nv.dang_lam) { man.innerHTML = `<div class="the"><div class="loi">Tài khoản chưa có vai trò hoặc đã khóa. Báo Hieu.</div></div>`; return; }
+  S.nv = nv;
+  langNghe();
+  await tai();
+}
+
+async function tai() {
+  const [m, c] = await Promise.all([
+    sb.from('thuc_don').select('ma, ten, nhom, gia, don_vi, mo_ta, gia_tam, dang_ban, thu_tu, tam_het_luc').eq('dang_ban', true).order('thu_tu'),
+    sb.from('vao_ca').select('vai_tro').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
+  ]);
+  if (m.error) { man.innerHTML = `<div class="the"><div class="loi">Không đọc được thực đơn: ${esc(m.error.message)}</div></div>`; return; }
+  S.menu = m.data; S.ca = c.data;
+  ve();
+}
+
+function ve() {
+  const seg = `<div class="seg"><button class="${S.che === 'nv' ? 'chon' : ''}" data-che="nv">Nhân viên bấm</button><button class="${S.che === 'khach' ? 'chon' : ''}" data-che="khach">Xem như khách</button></div>`;
+  const soHet = S.menu.filter(laHet).length;
+  let dau;
+  if (S.che === 'nv') {
+    dau = S.ca
+      ? `<div class="the">Xin chào <b>${esc(S.nv.ten_hien_thi)}</b> · đang ở <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">Hôm nay ${soHet} món tạm hết. Sang ngày mới tự mở bán lại.</div></div>`
+      : `<div class="canh">Bạn <b>chưa vào ca</b> nên chưa bấm được. <a href="bai6-vao-ca.html">→ Vào ca trước</a></div>`;
+  } else {
+    dau = `<div class="the"><b>Menu khách thấy</b><div class="goi-y">Món tạm hết vẫn hiện, gạch ngang. Chạm món tạm hết để xem gợi ý món thay.</div></div>`;
+  }
+  const nhom = Object.keys(NHOM).map(n => {
+    const ds = S.menu.filter(m => m.nhom === n);
+    if (!ds.length) return '';
+    return `<div class="the"><div class="nhom">${NHOM[n]}</div>` + ds.map(m => {
+      const het = laHet(m);
+      const nut = S.che === 'nv'
+        ? (het ? `<button class="nut mo" data-mo="${m.ma}" ${S.ca ? '' : 'disabled'}>Mở bán lại</button>` : `<button class="nut" data-het="${m.ma}" ${S.ca ? '' : 'disabled'}>Tạm hết</button>`)
+        : `<span class="gia">${tien(m.gia)}</span>`;
+      return `<div class="mon ${het ? 'het' : ''}" ${S.che === 'khach' ? `data-xem="${m.ma}"` : ''}>
+        <div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(m.gia)}/${esc(m.don_vi)}${m.gia_tam ? ' (giá tạm)' : ''}${m.mo_ta ? ' · ' + esc(m.mo_ta) : ''}</span>
+          ${het ? `<br><span class="tag-het">TẠM HẾT${S.che === 'nv' ? ' từ ' + gio(m.tam_het_luc) : ''}</span>` : ''}</div>${nut}</div>`;
+    }).join('') + `</div>`;
+  }).join('');
+  man.innerHTML = seg + dau + nhom + `<button class="phu" id="thoat">Đăng xuất</button>`;
+  man.querySelectorAll('[data-che]').forEach(b => b.onclick = () => { S.che = b.dataset.che; ve(); });
+  man.querySelectorAll('[data-het]').forEach(b => b.onclick = () => dat(b.dataset.het, true));
+  man.querySelectorAll('[data-mo]').forEach(b => b.onclick = () => dat(b.dataset.mo, false));
+  man.querySelectorAll('[data-xem]').forEach(el => el.onclick = () => {
+    const m = S.menu.find(x => x.ma === el.dataset.xem);
+    if (!laHet(m)) return bao('Khách chọn: ' + m.ten);
+    const g = goiYThay(m);
+    bao(`"${m.ten}" tạm hết. ${g.length ? 'Thử: ' + g.map(x => x.ten + ' (' + tien(x.gia) + ')').join(' / ') : 'Hiện chưa có món thay cùng nhóm.'}`, 6000);
+  });
+  document.getElementById('thoat').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+}
+
+async function dat(ma, het) {
+  const m = S.menu.find(x => x.ma === ma);
+  const { data, error } = await sb.rpc('dat_tam_het', { p_ma: ma, p_het: het });
+  if (error) return bao('Lỗi: ' + error.message);
+  bao({ ok: (het ? '⛔ Tạm hết: ' : '✅ Mở bán lại: ') + m.ten, chua_vao_ca: 'Bạn chưa vào ca (hoặc mất kết nối quá 10 phút). Vào ca trước.', khong_co_mon: 'Không tìm thấy món.' }[data.kq] || data.kq);
+  await tai();
+}
+
+// Giữ chỗ trong ca khi đang mở trang này (nhịp mỗi phút, dùng chung mã máy với trang Vào ca)
+setInterval(() => { if (S.user && MAY) sb.rpc('nhip', { p_may: MAY }); }, 60000);
+
+// Realtime: máy khác bấm tạm hết → máy này thấy ngay
+let kenh = null;
+function langNghe() {
+  if (kenh) return;
+  const kn = document.getElementById('ketnoi');
+  kenh = sb.channel('thuc-don').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'thuc_don' }, (p) => {
+    const i = S.menu.findIndex(x => x.ma === p.new.ma);
+    if (i >= 0) { S.menu[i] = { ...S.menu[i], ...p.new }; ve(); }
+  }).subscribe(st => kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase());
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) tai(); });
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  session ? batDau(session.user) : veDangNhap();
+})();
+</script>
+</body>
+</html>
