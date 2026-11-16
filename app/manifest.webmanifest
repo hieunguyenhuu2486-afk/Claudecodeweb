@@ -16,6 +16,7 @@
   ],
   "shortcuts": [
     { "name": "Phục vụ", "url": "./#phucvu", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
-    { "name": "Quầy nước", "url": "./#nuoc", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+    { "name": "Quầy nước", "url": "./#nuoc", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Màn Phục vụ (bản mẫu)", "url": "./phuc-vu.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }

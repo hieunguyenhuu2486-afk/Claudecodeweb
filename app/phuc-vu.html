@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phục vụ – Quán Bảy</title>
+<!-- BẢN MẪU v3 để Hieu duyệt bố cục. Dữ liệu GIẢ, không nối kho Supabase. Thiết kế: docs/thiet-ke-man-phuc-vu.md -->
+<!-- Bản trong PWA (pwa/phuc-vu.html) = bản gốc database/mau-man-phuc-vu.html + nút về app + manifest + service worker. Sửa bố cục thì sửa bản gốc rồi chép lại. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#888; --the:#fff; --vien:#e5d5bf; --vang:#ffe08a; --tim:#3730a3; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); padding-bottom:76px; }
+  button { font:inherit; border:0; border-radius:10px; cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 16px; background:var(--chu); color:#fff; }
+  header h1 { margin:0; font-size:18px; }
+  .gia { font-size:11px; background:var(--cam); padding:3px 8px; border-radius:99px; white-space:nowrap; }
+  #am { padding:7px 10px; font-size:13px; font-weight:700; background:#fff; color:var(--chu); white-space:nowrap; }
+  #am.bat { background:var(--xanh); color:#fff; }
+  .an { display:none !important; }
+  /* Thanh 3 quầy + cá kho */
+  #thanh { position:sticky; top:0; z-index:5; display:grid; grid-template-columns:1fr 1fr 1fr .85fr; gap:6px; padding:8px 12px; background:#f3e3cc; }
+  .quay-o { background:var(--the); border:2px solid var(--vien); padding:8px 4px; text-align:center; color:var(--chu); }
+  .quay-o b { display:block; font-size:15px; }
+  .quay-o .so { font-size:20px; font-weight:800; }
+  .quay-o .lau { font-size:12px; color:var(--xam); }
+  .quay-o.nho { padding:8px 2px; }
+  .quay-o.nho b { font-size:13px; }
+  /* Công cụ: tìm + sắp xếp */
+  #congcu { max-width:620px; margin:0 auto; padding:12px 12px 0; }
+  #tim { width:100%; font-size:16px; padding:12px; border:2px solid var(--vien); border-radius:12px; background:#fff; }
+  .hang2 { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; }
+  .loc { padding:8px 6px; font-size:13px; font-weight:700; background:#eee; color:var(--chu); line-height:1.2; }
+  .loc.chon { background:var(--chu); color:#fff; }
+  .sx { font-size:13px; color:var(--xam); width:52px; }
+  .hang2 .loc { flex:1; }
+  #goiy-sx { font-size:13px; color:#7a5a3a; margin:6px 2px 0; }
+  main { max-width:620px; margin:0 auto; padding:12px 12px 0; }
+  .tieu { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:15px; color:var(--xam); margin:2px 2px 10px; }
+  .tieu small { font-size:12px; }
+  .tieu-ghim { font-size:14px; font-weight:800; color:var(--chu); margin:4px 2px 8px; }
+  .moi-don { padding:10px 14px; font-weight:800; background:var(--do); color:#fff; white-space:nowrap; }
+  /* Thẻ */
+  .the { background:var(--the); border:1px solid var(--vien); border-radius:14px; padding:12px; margin-bottom:10px; }
+  .the.ghim { border:2px solid var(--chu); box-shadow:0 2px 0 var(--chu); }
+  .dau { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .ban { font-size:24px; font-weight:800; }
+  .ban.phu { font-size:20px; }
+  .thutu { font-size:14px; font-weight:800; color:#fff; background:var(--cam); padding:2px 8px; border-radius:99px; }
+  .nhan { font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; background:#eee; }
+  .nhan.moi { background:#dbeafe; } .nhan.them { background:#ede9fe; } .nhan.phu { background:#fde68a; }
+  .nut-dau { margin-left:auto; display:flex; gap:6px; }
+  .ghim-nut, .ut-nut { padding:6px 10px; font-size:13px; font-weight:700; background:#f3e3cc; color:var(--chu); }
+  .ghim-nut.dang { background:var(--chu); color:#fff; }
+  .ut-nut.dang { background:var(--do); color:#fff; }
+  .the { scroll-margin-top:150px; }
+  /* Thanh ghim (như tin nhắn ghim Zalo): cố định dưới thanh quầy, bấm để thả xuống */
+  #ghimbar { position:sticky; z-index:4; background:var(--chu); color:#fff; }
+  .ghim-dau { display:block; width:100%; max-width:620px; margin:0 auto; text-align:left; background:none; color:#fff; padding:10px 16px; font-size:14px; border-radius:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ghim-dong { display:flex; gap:8px; align-items:center; max-width:620px; margin:0 auto; padding:6px 12px; border-top:1px solid #4a3520; }
+  .ghim-di { flex:1; text-align:left; background:#fff; color:var(--chu); padding:10px; }
+  .ghim-di small { display:block; color:var(--xam); font-size:12px; }
+  .gio { font-size:13px; color:var(--xam); margin-top:4px; }
+  .phut { font-size:13px; color:var(--xam); margin-left:auto; }
+  .canh { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+  .tag { font-size:13px; font-weight:700; padding:4px 8px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; }
+  .tag.do { background:#fdecea; color:var(--do); border:1px solid var(--do); }
+  .tag.cam { background:#fff1e0; color:#a35200; }
+  .tag.xanh { background:#e6f4ea; color:var(--xanh); }
+  .tag.tim { background:#e0e7ff; color:var(--tim); }
+  .tag button { padding:4px 8px; font-size:13px; background:var(--do); color:#fff; }
+  .tag.xanh button { background:#fff; color:var(--xanh); border:1px solid var(--xanh); }
+  .tiendo { font-size:15px; display:flex; gap:12px; flex-wrap:wrap; }
+  .duoi { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .tien { font-weight:800; }
+  .mo { background:none; color:#1d4ed8; padding:6px 0; font-size:14px; }
+  .chitiet { border-top:1px dashed var(--vien); margin-top:8px; padding-top:4px; }
+  .muc { font-size:14px; font-weight:800; margin:12px 0 6px; text-transform:uppercase; letter-spacing:.3px; color:#7a5a3a; }
+  .luot { font-size:13px; font-weight:700; color:var(--xam); margin:8px 0 4px; }
+  .dong { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1e6d6; }
+  .dong .ten { flex:1; font-size:15px; }
+  .dong-tien { display:flex; justify-content:space-between; gap:8px; font-size:14px; padding:4px 0; border-bottom:1px dotted #eadbc6; }
+  .dong-tien.tong { font-size:16px; font-weight:800; border:0; padding-top:8px; }
+  .gc { display:inline-block; margin-top:2px; padding:1px 8px; background:var(--vang); border-radius:6px; font-size:13px; font-weight:700; }
+  .tt { font-size:12px; padding:2px 6px; border-radius:6px; white-space:nowrap; }
+  .tt.moi { background:#eee; } .tt.xong { background:#e6f4ea; color:var(--xanh); } .tt.len { background:#e0e7ff; color:var(--tim); } .tt.muc { background:#fff1e0; color:#a35200; }
+  .nut { padding:10px 12px; font-size:14px; font-weight:700; color:#fff; background:var(--xanh); white-space:nowrap; }
+  .nut.len { background:var(--tim); } .nut.ht { background:var(--cam); } .nut.xam { background:#666; } .nut.do { background:var(--do); }
+  .nut.vien { background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .hanhdong { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .hanhdong .nut { padding:12px 8px; }
+  .dai { width:100%; margin-top:6px; }
+  .ut { border:2px solid var(--do); background:#fdecea; }
+  .nhan-ut { display:inline-block; font-size:12px; font-weight:800; color:#fff; background:var(--do); padding:2px 8px; border-radius:6px; margin-bottom:4px; }
+  .trong { text-align:center; color:var(--xam); padding:24px; }
+  .goc { font-size:13px; color:var(--xam); margin-top:8px; }
+  /* Tab quầy */
+  .seg { display:flex; gap:6px; margin-bottom:10px; }
+  .seg button { flex:1; padding:12px 6px; font-weight:700; background:#eee; color:var(--chu); }
+  .seg button.chon { background:var(--chu); color:#fff; }
+  .hotro { width:100%; padding:12px; margin-bottom:10px; font-weight:700; background:#fff; border:2px dashed var(--cam); color:#a35200; }
+  /* Hộp nổi (gọi món, ghi thiếu đồ, đổi bàn) */
+  #hop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:20; display:flex; align-items:flex-end; justify-content:center; }
+  #hop .khung { background:var(--nen); width:100%; max-width:620px; max-height:88vh; overflow:auto; border-radius:18px 18px 0 0; padding:16px 14px 20px; }
+  .hop-dau { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .hop-dau h2 { margin:0; font-size:19px; }
+  .dong-hop { background:#ddd; color:var(--chu); padding:8px 12px; }
+  .chip { padding:10px 12px; font-size:15px; font-weight:700; background:#fff; border:2px solid var(--vien); color:var(--chu); }
+  .chip.ca { border-color:var(--cam); color:#a35200; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+  .xem-truoc { width:100%; font-size:14px; }
+  .o-chu { width:100%; font-size:16px; padding:12px; border:2px solid var(--vien); border-radius:10px; }
+  .hang-go { display:flex; gap:6px; }
+  .hang-go .o-chu { flex:1; min-width:0; }
+  .luoi-ban { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin:8px 0 12px; }
+  .luoi-ban button { padding:10px 2px; font-weight:800; background:#fff; border:2px solid var(--vien); color:var(--chu); font-size:15px; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .luoi-ban button.phu { font-size:12px; border-style:dashed; }
+  .luoi-ban button small { display:block; font-size:10px; font-weight:600; color:var(--xam); }
+  .luoi-ban button.chon { background:var(--chu); color:#fff; }
+  .luoi-ban button.trongban small { color:var(--xanh); }
+  .nhom { font-weight:800; margin:14px 0 4px; }
+  .dong-mon { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1e6d6; }
+  .dong-mon .ten { flex:1; }
+  .dong-mon .ten small { color:var(--xam); }
+  .dong-mon button { width:44px; height:44px; font-size:24px; font-weight:800; background:#f3e3cc; color:var(--chu); }
+  .dong-mon .sl { width:28px; text-align:center; font-size:18px; font-weight:800; }
+  .tom { position:sticky; bottom:-20px; background:var(--nen); padding:10px 0 4px; margin-top:8px; border-top:2px solid var(--vien); }
+  /* Thanh tab đáy */
+  nav { position:fixed; bottom:0; left:0; right:0; display:grid; grid-template-columns:repeat(3,1fr); background:var(--chu); z-index:6; }
+  nav button { background:none; color:#ccc; padding:14px 4px; font-size:15px; font-weight:700; border-radius:0; }
+  nav button.chon { color:#fff; background:#4a3520; }
+  @keyframes nhay { 50% { background:var(--cam); color:#fff; } }
+  nav button.nhay { animation:nhay .5s 6; }
+  #thongbao { position:fixed; left:12px; right:12px; bottom:86px; background:#222; color:#fff; padding:12px 14px; border-radius:10px; font-size:14px; display:none; z-index:30; }
+  .reset { display:block; margin:16px auto; background:none; color:var(--xam); text-decoration:underline; font-size:13px; }
+</style>
+</head>
+<body>
+<header><a href="./" style="color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:6px 10px;background:#333;border-radius:8px;white-space:nowrap" aria-label="Về màn chính của app">←</a><h1 style="flex:1;white-space:nowrap">Phục vụ</h1><button id="am" data-act="am">🔕 Bật âm báo</button><span class="gia" title="Dữ liệu giả, chưa nối kho">BẢN MẪU</span></header>
+<div id="thanh"></div>
+<div id="ghimbar" class="an"></div>
+<div id="congcu">
+  <input id="tim" data-inp="tim" type="search" autocomplete="off" placeholder="🔍 Tìm: số bàn, tên bàn phụ, món, giờ (vd 5 · xèo tôm · 12:3)">
+  <div class="hang2">
+    <span class="sx">Sắp xếp</span>
+    <button class="loc" id="sx-moi" data-act="sx" data-v="moi">🆕 Mới vào</button>
+    <button class="loc" id="sx-lau" data-act="sx" data-v="lau">⏳ Ngồi lâu nhất</button>
+    <button class="loc" id="sx-cho" data-act="sx" data-v="cho">⌛ Chờ món lâu nhất</button>
+  </div>
+  <div id="goiy-sx"></div>
+  <div class="hang2">
+    <span class="sx">Lọc</span>
+    <button class="loc" id="loc-chualen" data-act="chualen">Chỉ món chưa lên</button>
+  </div>
+</div>
+<main id="noidung"></main>
+<nav>
+  <button id="nav-ban" data-act="tab" data-v="ban">Tổng quan</button>
+  <button id="nav-mang" data-act="tab" data-v="mang">Chờ mang</button>
+  <button id="nav-quay" data-act="tab" data-v="quay">Quầy</button>
+</nav>
+<div id="hop" class="an"><div class="khung"></div></div>
+<div id="thongbao"></div>
+
+<script>
+// ===== Menu (tên + giá theo docs/menu-gia.md) =====
+// Bánh xèo: chỉ 1 món "Bánh xèo", loại (thập cẩm / tôm / mực / thịt / kết hợp) ghi kèm → bếp thấy "Bánh xèo tôm".
+const MON = {
+  xeo:      { ten: 'Bánh xèo',                 tram: 'xeo',  gia: 40000 },
+  can_tt:   { ten: 'Căn truyền thống (combo)', tram: 'can',  gia: 37000 },
+  can_trung:{ ten: 'Căn trứng (combo)',        tram: 'can',  gia: 42000 },
+  can_tmt:  { ten: 'Căn tôm, mực, trứng',      tram: 'can',  gia: 32000 },
+  can_tm:   { ten: 'Căn tôm mực',              tram: 'can',  gia: 37000 },
+  can_tom:  { ten: 'Căn tôm',                  tram: 'can',  gia: 37000 },
+  can_muc:  { ten: 'Căn mực',                  tram: 'can',  gia: 37000 },
+  can_hs:   { ten: 'Căn hải sản thêm trứng',   tram: 'can',  gia: 42000 },
+  mia:      { ten: 'Nước mía',                 tram: 'nuoc', gia: 10000 },
+  rau:      { ten: 'Rau má',                   tram: 'nuoc', gia: 10000 },
+  ngot:     { ten: 'Nước ngọt',                tram: 'nuoc', gia: 12000, tam: true },
+  cakho:    { ten: 'Cá kho',                   tram: 'ca',   gia: 17000 },
+};
+const TRAM = {
+  xeo:  { ten: 'Xèo',    day: 'Bếp xèo',     icon: '🔥', donvi: 'phần' },
+  can:  { ten: 'Căn',    day: 'Bếp căn',     icon: '🥘', donvi: 'phần' },
+  nuoc: { ten: 'Nước',   day: 'Quầy nước',   icon: '🥤', donvi: 'ly' },
+  ca:   { ten: 'Cá kho', day: 'Phục vụ múc', icon: '🐟', donvi: 'con' },   // không qua bếp: phục vụ múc mang lên
+};
+const BEP = ['xeo', 'can', 'nuoc'];
+const LOAI_XEO = ['thập cẩm', 'tôm', 'mực', 'thịt'];
+// 14 bàn đánh số + 5 bàn phụ KHÔNG đánh số (mở khi đông, ghi tên lúc mở: "bàn ngoài cửa"…)
+const SLOT_CHINH = Array.from({ length: 14 }, (_, i) => String(i + 1));
+const SLOT_PHU = ['P1', 'P2', 'P3', 'P4', 'P5'];
+const GHIM_TOI_DA = 3;     // [DUYỆT] mỗi máy ghim tối đa 3 bàn, ghim riêng từng máy
+// Gợi ý "thiếu đồ / khách xin thêm" (Hieu đưa ra 16/11)
+const GOI_Y = ['Nước chấm bánh căn', 'Nước chấm bánh xèo', 'Rau sống', 'Xoài', 'Trà đá', 'Giấy', 'Ớt'];
+
+// ===== Dữ liệu GIẢ: phiên bàn → lượt gọi → dòng món =====
+let maSo = 0;
+const moiId = () => ++maSo;
+const truoc = (phut) => Date.now() - phut * 60000;
+function dong(mon, sl, tt, o = {}) {
+  return { id: moiId(), mon, sl, tt, loai: o.loai || '', ghichu: o.gc || '', uu_tien: !!o.ut,
+           xong_luc: o.xong != null ? truoc(o.xong) : null,
+           len_luc: tt === 'len' ? truoc(o.len || 1) : null };
+}
+const luot = (phut, nhan, ds, nguon = 'khách QR') => ({ gio: truoc(phut), nhan, nguon, ds });
+const canMang = (ten, chi_tiet, phut) => ({ id: moiId(), ten, chi_tiet, luc: truoc(phut) });
+const ban = (so, setup, can_mang, dsLuot, ten = null) => ({ so, ten, setup, ghim: null, tu_ban: null, can_mang, luot: dsLuot });
+function taoMau() {
+  maSo = 0;
+  return [
+    // Bàn 1: vào sớm nhất, ăn xong hết, giờ gọi thêm 2 xèo tôm (đúng tình huống Hieu kể)
+    ban('1', true, [canMang('Xoài', 'khách xin thêm', 3)], [
+      luot(32, 'đơn mới',  [dong('xeo', 2, 'len', { loai: 'thập cẩm', xong: 20, len: 19 }), dong('can_trung', 1, 'len', { xong: 24, len: 23 }), dong('mia', 2, 'len', { xong: 28, len: 27 }), dong('cakho', 2, 'len', { len: 30 })]),
+      luot(4,  'gọi thêm', [dong('xeo', 2, 'moi', { loai: 'tôm' })]) ]),
+    ban('10', true, [], [
+      luot(26, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'thập cẩm', xong: 12, len: 11 }), dong('can_tt', 2, 'len', { xong: 18, len: 17 }), dong('rau', 3, 'len', { xong: 22, len: 21 })]) ]),
+    ban('7', true, [], [
+      luot(22, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'mực', xong: 10, len: 9 }), dong('can_tt', 2, 'len', { xong: 15, len: 14 }), dong('mia', 3, 'len', { xong: 19, len: 18 })]),
+      luot(9,  'gọi thêm', [dong('xeo', 1, 'xong', { loai: 'tôm thịt', xong: 1 })]) ]),
+    ban('3', true, [], [
+      luot(15, 'đơn mới',  [dong('xeo', 4, 'moi', { loai: 'thập cẩm' }), dong('can_tm', 2, 'xong', { xong: 2 }), dong('rau', 4, 'moi', { gc: '2 ly ít ngọt' })]) ]),
+    ban('9', true, [], [
+      luot(11, 'đơn mới',  [dong('xeo', 2, 'moi', { loai: 'thập cẩm' }), dong('can_tom', 1, 'moi', { ut: true }), dong('mia', 2, 'xong', { xong: 3 }), dong('cakho', 1, 'moi')]) ]),
+    ban('P1', true, [], [
+      luot(8,  'đơn mới',  [dong('can_tmt', 2, 'moi'), dong('rau', 2, 'moi')], 'phục vụ nhập hộ') ], 'Bàn ngoài cửa'),
+    ban('5', false, [canMang('Rau sống', 'đang rửa, mang sau', 2)], [
+      luot(6,  'đơn mới',  [dong('can_hs', 1, 'moi'), dong('xeo', 2, 'moi', { loai: 'tôm' }), dong('ngot', 1, 'moi')], 'phục vụ nhập hộ') ]),
+    ban('12', false, [], [
+      luot(1,  'đơn mới',  [dong('rau', 2, 'moi', { gc: 'ít đá' }), dong('xeo', 1, 'moi', { loai: 'thập cẩm' })]) ]),
+  ];
+}
+let BAN = taoMau();
+let tab = 'ban', sapXep = 'moi', q = '', chiChuaLen = false, quay = 'xeo', quayLichSu = false;
+let hop = null;            // hộp nổi đang mở
+const moRong = new Set();  // bàn đang mở chi tiết
+
+// ===== Tiện ích =====
+const phut = (ts) => Math.max(0, Math.floor((Date.now() - ts) / 60000)) + "'";
+const gioVN = (ts) => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const tien = (n) => n.toLocaleString('vi-VN') + 'đ';
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const khongDau = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase().trim();
+const hoaDau = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const timBan = (so) => BAN.find(b => b.so === so);
+const laPhu = (so) => String(so || '').startsWith('P');
+const tenBan = (b) => b.ten ? b.ten : 'Bàn ' + b.so;
+const tenMon = (d) => d.mon === 'xeo' && d.loai ? 'Bánh xèo ' + d.loai : MON[d.mon].ten;
+const tenKey = (k) => k.startsWith('xeo|') ? 'Bánh xèo ' + k.slice(4) : MON[k].ten;
+const giaKey = (k) => MON[k.split('|')[0]].gia;
+function tatCaDong() {
+  const kq = [];
+  BAN.forEach(b => b.luot.forEach((l, li) => l.ds.forEach(d => kq.push({ b, l, li, d, tram: MON[d.mon].tram }))));
+  return kq;
+}
+const timDong = (id) => tatCaDong().find(x => x.d.id === id);
+const laMonAn = (tram) => tram === 'xeo' || tram === 'can';
+const vaoLuc = (b) => b.luot[0].gio;
+const conCho = (b) => b.luot.flatMap(l => l.ds).filter(d => d.tt !== 'len').reduce((s, d) => s + d.sl, 0);
+// "Chờ món" = món BẾP CHƯA LÀM XONG (xèo, căn, nước đang làm). Món bếp đã xong chờ mang + cá kho chờ múc
+// thuộc tab "Chờ mang", không tính ở đây. Bàn không còn món đang làm thì KHÔNG hiện ở "Chờ món lâu nhất".
+const dangLam = (d) => d.tt === 'moi' && BEP.includes(MON[d.mon].tram);
+const choBep = (b) => b.luot.flatMap(l => l.ds).filter(dangLam).reduce((s, d) => s + d.sl, 0);
+const choLauNhat = (b) => Math.min(...b.luot.filter(l => l.ds.some(dangLam)).map(l => l.gio));
+// Thứ tự "Chờ món lâu nhất": quán làm theo thứ tự order → bàn có món GỌI SỚM NHẤT mà bếp chưa xong ở trên.
+// Bàn vào lâu nhưng mới gọi thêm thì tính theo giờ gọi thêm.
+const hangCho = () => BAN.filter(b => choBep(b) > 0).sort((a, b) => choLauNhat(a) - choLauNhat(b)).map(b => b.so);
+const choMangDs = () => tatCaDong().filter(x => x.d.tt === 'xong' || (x.tram === 'ca' && x.d.tt === 'moi'));
+const ttChu = (x) => x.tram === 'ca' && x.d.tt === 'moi' ? 'Chờ múc' : { moi: 'Đang làm', xong: 'Xong – chờ mang', len: 'Đã lên' }[x.d.tt];
+
+// ===== Chuông + rung =====
+// Máy thật: máy PHỤC VỤ kêu khi bếp bấm Xong / có cá kho cần múc; máy BẾP (xèo, căn, nước) kêu khi có đơn mới / hoàn tác.
+// Bản mẫu chỉ có 1 máy nên kêu tất cả, kèm dòng báo "máy nào kêu".
+let ac = null, amBat = false;
+const demChuong = { bep: 0, phucvu: 0 };   // để kiểm thử
+function beep(t, f, dai, to, kieu) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = kieu; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(to, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dai);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dai + 0.05);
+}
+function chuong(loai) {
+  demChuong[loai]++;
+  try { navigator.vibrate && navigator.vibrate(loai === 'bep' ? [400, 150, 400, 150, 400] : [200, 100, 200]); } catch (e) {}
+  if (loai === 'phucvu') {
+    const n = document.getElementById('nav-mang');
+    n.classList.remove('nhay'); void n.offsetWidth; n.classList.add('nhay');
+  }
+  if (!amBat || !ac) return;
+  const t = ac.currentTime;
+  if (loai === 'bep') [0, 0.4, 0.8].forEach(s => beep(t + s, 880, 0.3, 0.5, 'square'));   // bếp: 3 tiếng gắt
+  else { beep(t, 1318, 0.6, 0.5, 'sine'); beep(t + 0.3, 1046, 0.9, 0.5, 'sine'); }        // phục vụ: "ding-dong"
+}
+function baoXong(x) {
+  chuong('phucvu');
+  bao(`🔔 Máy phục vụ (Chờ mang): ${tenBan(x.b)} – ${x.d.sl} ${tenMon(x.d)} xong`, 3500);
+}
+function baoDonMoi(b, ds, nhan) {
+  const bep = [...new Set(ds.map(d => MON[d.mon].tram).filter(t => t !== 'ca'))];
+  const coCa = ds.some(d => d.mon === 'cakho');
+  if (bep.length) {
+    chuong('bep');
+    bao(`🔔 Máy ${bep.map(t => TRAM[t].day).join(', ')}: chuông + rung – ${nhan} ${tenBan(b)}${coCa ? ' · 🐟 cá kho chờ múc' : ''}`, 4000);
+  }
+  if (coCa) {
+    setTimeout(() => chuong('phucvu'), bep.length ? 1300 : 0);
+    if (!bep.length) bao(`🔔 Máy phục vụ (Chờ mang): ${tenBan(b)} – cá kho chờ múc`, 4000);
+  }
+}
+
+// ===== Thanh 3 quầy + cá kho =====
+function veThanh() {
+  const ds = tatCaDong();
+  document.getElementById('thanh').innerHTML = Object.keys(TRAM).map(t => {
+    const dang = ds.filter(x => x.tram === t && x.d.tt === 'moi');
+    const so = dang.reduce((s, x) => s + x.d.sl, 0);
+    const cuNhat = dang.length ? Math.min(...dang.map(x => x.l.gio)) : null;
+    const ca = t === 'ca';
+    return `<button class="quay-o ${ca ? 'nho' : ''}" data-act="${ca ? 'tab' : 'xemquay'}" data-v="${ca ? 'mang' : t}">
+      <b>${TRAM[t].icon} ${TRAM[t].ten}</b>
+      <span class="so">${so}</span> ${TRAM[t].donvi}
+      <div class="lau">${cuNhat ? (ca ? 'chưa múc' : 'lâu nhất ' + phut(cuNhat)) : 'trống'}</div></button>`;
+  }).join('');
+}
+
+// ===== Tab Tổng quan =====
+function soBanTuTim() {
+  const m = khongDau(q).match(/^(?:ban\s*)?(\d{1,2})$/);
+  return m ? String(+m[1]) : null;
+}
+function veTongQuan() {
+  const chinhTrong = SLOT_CHINH.filter(s => !timBan(s)).length, phuTrong = SLOT_PHU.filter(s => !timBan(s)).length;
+  const dau = `<div class="tieu"><span>Đang phục vụ <b>${BAN.length} bàn</b><br><small>trống ${chinhTrong}/14 bàn · ${phuTrong}/5 bàn phụ</small></span>
+    <button class="moi-don" data-act="modonmoi">+ Đơn mới</button></div>`;
+  if (!q && !chiChuaLen) {
+    if (!BAN.length) return dau + `<div class="trong">Chưa có bàn nào</div>`;
+    // Bàn ghim KHÔNG bị nhấc lên: vẫn nằm đúng thứ tự; muốn xem nhanh thì dùng thanh 📌 phía trên.
+    if (sapXep === 'cho') {
+      const ds = hangCho().map(timBan), an = BAN.length - ds.length;
+      const ghiAn = an ? `<div class="goc" style="margin:0 2px 10px">Ẩn ${an} bàn không còn món đang làm – xem ở "Mới vào" / "Ngồi lâu nhất"; món xong chờ mang xem tab "Chờ mang".</div>` : '';
+      return dau + ghiAn + (ds.length ? ds.map(veThe).join('') : `<div class="trong">Không bàn nào đang chờ món 👍</div>`);
+    }
+    const sx = [...BAN];
+    if (sapXep === 'moi') sx.sort((a, b) => vaoLuc(b) - vaoLuc(a));
+    else sx.sort((a, b) => vaoLuc(a) - vaoLuc(b));
+    return dau + sx.map(veThe).join('');
+  }
+  const so = soBanTuTim();
+  if (so != null) {
+    const b = timBan(so);
+    return dau + (b ? veThe(b) : `<div class="trong">Bàn ${so} đang trống</div>`);
+  }
+  return dau + veKetQua();
+}
+// Kết quả tìm theo tên bàn phụ / tên món / giờ / ghi chú + lọc "món chưa lên"
+function veKetQua() {
+  const tu = khongDau(q).replace(/(\d)h(\d)/, '$1:$2');
+  const khop = (...chu) => !tu || chu.some(c => khongDau(c).includes(tu));
+  const banTen = tu && !chiChuaLen ? BAN.filter(b => (b.ten && khongDau(b.ten).includes(tu)) || (b.uutien && 'uu tien'.includes(tu))) : [];
+  const mon = tatCaDong()
+    .filter(x => !chiChuaLen || x.d.tt !== 'len')
+    .filter(x => khop(tenMon(x.d), gioVN(x.l.gio), x.d.ghichu, x.l.nhan))
+    .sort((a, b) => a.l.gio - b.l.gio);
+  const mang = chiChuaLen ? [] : BAN.flatMap(b => b.can_mang.map(c => ({ b, c }))).filter(({ c }) => khop(c.ten, c.chi_tiet));
+  if (!banTen.length && !mon.length && !mang.length) return `<div class="trong">Không tìm thấy gì</div>`;
+  const dem = [banTen.length ? `<b>${banTen.length}</b> bàn` : '', mon.length ? `<b>${mon.length}</b> món` : '', mang.length ? `<b>${mang.length}</b> đồ cần mang` : ''].filter(Boolean).join(' · ');
+  return `<div class="tieu"><span>Tìm thấy ${dem}</span></div>` + banTen.map(veThe).join('') +
+    mang.map(({ b, c }) => `<div class="the"><div class="dong" style="border:0"><div class="ten"><b>${esc(tenBan(b))}</b> · 📋 Cần mang: <b>${esc(c.ten)}</b>${c.chi_tiet ? ' – ' + esc(c.chi_tiet) : ''}<br><small>ghi ${phut(c.luc)} trước</small></div>
+      <button class="nut vien" data-act="moban" data-v="${b.so}">Mở bàn</button></div></div>`).join('') +
+    mon.map(x => `<div class="the"><div class="dong" style="border:0"><div class="ten"><b>${esc(tenBan(x.b))}</b> · ${gioVN(x.l.gio)} ${x.l.nhan}<br>
+      ${TRAM[x.tram].icon} <b>${x.d.sl}</b> ${esc(tenMon(x.d))} <span class="tt ${x.d.tt}">${ttChu(x)}${x.d.tt === 'moi' ? ' ' + phut(x.l.gio) : ''}</span>
+      ${x.d.ghichu ? `<br><span class="gc">📝 ${esc(x.d.ghichu)}</span>` : ''}</div>
+      <button class="nut vien" data-act="moban" data-v="${x.b.so}">Mở bàn</button></div></div>`).join('');
+}
+
+function veThe(b) {
+  const ds = b.luot.flatMap(l => l.ds);
+  const luotCuoi = b.luot[b.luot.length - 1];
+  const coDoAn = ds.some(d => laMonAn(MON[d.mon].tram));
+  const chuaCoDoAn = coDoAn && !ds.some(d => laMonAn(MON[d.mon].tram) && d.tt === 'len');
+  const choMang = ds.filter(d => d.tt === 'xong' || (d.mon === 'cakho' && d.tt === 'moi')).length;
+  const tong = ds.reduce((s, d) => s + d.sl * MON[d.mon].gia, 0);
+  const cho = choBep(b);
+  const thuTu = sapXep === 'cho' && cho ? hangCho().indexOf(b.so) + 1 : 0;
+  const tiendo = Object.keys(TRAM).map(t => {
+    const cua = ds.filter(d => MON[d.mon].tram === t);
+    if (!cua.length) return '';
+    const len = cua.filter(d => d.tt === 'len').reduce((s, d) => s + d.sl, 0);
+    return `<span>${TRAM[t].icon} ${len}/${cua.reduce((s, d) => s + d.sl, 0)} lên</span>`;
+  }).join('');
+  const canh = [];
+  canh.push(b.setup
+    ? `<span class="tag xanh">✓ Đã setup <button data-act="bosetup" data-v="${b.so}" title="Hoàn tác setup">↩</button></span>`
+    : `<span class="tag do">Chưa setup <button data-act="setup" data-v="${b.so}">Đã setup</button></span>`);
+  if (b.uutien) canh.push(`<span class="tag do">⚡ ƯU TIÊN <button data-act="uutien" data-v="${b.so}" title="Bỏ đánh dấu">✕</button></span>`);
+  if (sapXep === 'cho' && cho) canh.push(`<span class="tag tim">⌛ Món chờ lâu nhất ${phut(choLauNhat(b))} · ${cho} món bếp đang làm</span>`);
+  if (b.can_mang.length) {
+    const ten = b.can_mang.map(c => c.ten);
+    canh.push(`<span class="tag cam">📋 Cần mang: ${esc(ten.slice(0, 3).join(', '))}${ten.length > 3 ? '…' : ''}</span>`);
+  }
+  if (chuaCoDoAn) canh.push(`<span class="tag cam">Chưa có đồ ăn · ${phut(vaoLuc(b))}</span>`);
+  if (choMang) canh.push(`<span class="tag xanh">${choMang} món chờ mang</span>`);
+  const mo = moRong.has(b.so);
+  return `<div class="the ${b.ghim ? 'ghim' : ''}" id="the-${b.so}">
+    <div class="dau">${thuTu ? `<span class="thutu">#${thuTu}</span>` : ''}<span class="ban ${b.ten ? 'phu' : ''}">${esc(tenBan(b))}</span>
+      ${laPhu(b.so) ? '<span class="nhan phu">bàn phụ</span>' : ''}
+      <span class="nhan ${luotCuoi.nhan === 'đơn mới' ? 'moi' : 'them'}">${luotCuoi.nhan}</span>
+      <span class="nut-dau"><button class="ut-nut ${b.uutien ? 'dang' : ''}" data-act="uutien" data-v="${b.so}" title="Đánh dấu ưu tiên">⚡</button><button class="ghim-nut ${b.ghim ? 'dang' : ''}" data-act="ghim" data-v="${b.so}">📌 ${b.ghim ? 'Bỏ ghim' : 'Ghim'}</button></span></div>
+    <div class="gio">🕐 vào ${gioVN(vaoLuc(b))} (${phut(vaoLuc(b))})${b.luot.length > 1 ? ` · gọi cuối ${gioVN(luotCuoi.gio)} (${phut(luotCuoi.gio)})` : ''}</div>
+    <div class="canh">${canh.join('')}</div>
+    <div class="tiendo">${tiendo}</div>
+    <div class="duoi"><button class="mo" data-act="mo" data-v="${b.so}">${mo ? 'Thu gọn ▴' : 'Xem chi tiết ▾'}</button>
+      <span class="tien">Tạm tính ${tien(tong)}</span></div>
+    ${mo ? veChiTiet(b) : ''}</div>`;
+}
+
+function veChiTiet(b) {
+  // 1) Setup + đồ cần mang (giữ suốt phiên, mỗi món bấm Xong khi đã mang)
+  const setup = `<div class="muc">Setup &amp; đồ cần mang</div>
+    <div class="dong"><div class="ten">${b.setup ? '✓ Đã setup đủ chén, đũa, nước chấm, rau, xoài' : 'Chưa setup – chỉ bấm khi đã dọn ĐỦ đồ'}</div>
+      ${b.setup ? `<button class="nut ht" data-act="bosetup" data-v="${b.so}">↩ Hoàn tác</button>` : `<button class="nut do" data-act="setup" data-v="${b.so}">Đã setup</button>`}</div>
+    ${b.can_mang.map(c => `<div class="dong"><div class="ten">📋 <b>${esc(c.ten)}</b>${c.chi_tiet ? ' – ' + esc(c.chi_tiet) : ''} <small class="phut">ghi ${phut(c.luc)} trước</small></div>
+      <button class="nut" data-act="mangxong" data-v="${c.id}" data-b="${b.so}">Xong</button></div>`).join('')}
+    <button class="nut vien dai" data-act="moghichu" data-v="${b.so}">+ Ghi thiếu đồ / khách xin thêm</button>`;
+  // 2) Món: từng lượt gọi
+  const luotHtml = b.luot.map(l => `<div class="luot">${gioVN(l.gio)} · ${l.nhan}${l.nguon === 'phục vụ nhập hộ' ? ' · phục vụ nhập hộ' : ''}</div>` + l.ds.map(veDong).join('')).join('');
+  // 3) Tạm tính (gộp theo món, cá kho tính như món thường)
+  const hd = {};
+  b.luot.forEach(l => l.ds.forEach(d => { const k = tenMon(d); (hd[k] = hd[k] || { sl: 0, gia: MON[d.mon].gia, tam: MON[d.mon].tam }).sl += d.sl; }));
+  const tongTien = Object.values(hd).reduce((s, x) => s + x.sl * x.gia, 0);
+  const bill = `<div class="muc">Tạm tính</div>` + Object.entries(hd).map(([k, x]) =>
+    `<div class="dong-tien"><span>${x.sl} × ${esc(k)}${x.tam ? ' <small>(giá tạm)</small>' : ''}</span><span>${tien(x.sl * x.gia)}</span></div>`).join('') +
+    `<div class="dong-tien tong"><span>Tổng</span><span>${tien(tongTien)}</span></div>`;
+  const goc = b.tu_ban ? `<div class="goc">↪ ${esc(b.tu_ban)}</div>` : '';
+  return `<div class="chitiet">${setup}
+    <div class="muc">Món</div>${luotHtml}${bill}
+    <div class="hanhdong"><button class="nut" data-act="mogoimon" data-v="${b.so}">+ Gọi thêm món</button>
+      <button class="nut xam" data-act="modoiban" data-v="${b.so}">⇄ Đổi / gộp bàn</button></div>${goc}</div>`;
+}
+function veDong(d) {
+  const m = MON[d.mon];
+  let tt, nut;
+  if (m.tram === 'ca' && d.tt === 'moi') { tt = `<span class="tt muc">Chờ múc</span>`; nut = `<button class="nut len" data-act="len" data-v="${d.id}">Đã lên</button>`; }
+  else if (d.tt === 'moi') { tt = `<span class="tt moi">Đang làm</span>`; nut = `<button class="nut" data-act="xong" data-v="${d.id}">Xong</button>`; }
+  else if (d.tt === 'xong') { tt = `<span class="tt xong">Xong ${phut(d.xong_luc)} trước</span>`; nut = `<button class="nut len" data-act="len" data-v="${d.id}">Đã lên</button><button class="nut ht" data-act="ht" data-v="${d.id}">↩</button>`; }
+  else { tt = `<span class="tt len">Đã lên</span>`; nut = `<button class="nut ht" data-act="ht" data-v="${d.id}">↩ Hoàn tác</button>`; }
+  return `<div class="dong"><div class="ten">${d.uu_tien && d.tt === 'moi' ? '<span class="nhan-ut">ƯU TIÊN</span><br>' : ''}${TRAM[m.tram].icon} <b>${d.sl}</b> ${esc(tenMon(d))}
+    ${d.ghichu ? `<br><span class="gc">📝 ${esc(d.ghichu)}</span>` : ''}</div>${tt}${nut}</div>`;
+}
+
+// ===== Tab Chờ mang: món bếp đã xong + cá kho cần múc =====
+function veChoMang() {
+  const giaLap = `<button class="hotro" data-act="giaxong">🧪 Giả lập: bếp bấm Xong 1 món → nghe chuông</button>`;
+  const ds = choMangDs().map(x => ({ ...x, san: x.tram === 'ca' ? x.l.gio : x.d.xong_luc })).sort((a, b) => a.san - b.san);
+  if (!ds.length) return giaLap + `<div class="trong">Không có món nào chờ mang 👍</div>`;
+  return giaLap + `<div class="tieu"><span>Món bếp đã xong + 🐟 cá kho cần múc, <b>chưa lên bàn</b> (sẵn trước ở trên)</span></div>` + ds.map(x => `
+    <div class="the"><div class="dau"><span class="ban ${x.b.ten ? 'phu' : ''}">${esc(tenBan(x.b))}</span><span class="phut">${x.tram === 'ca' ? 'gọi ' + phut(x.san) + ' trước · cần múc' : 'xong ' + phut(x.san) + ' trước'}</span></div>
+      <div class="dong" style="border:0"><div class="ten">${TRAM[x.tram].icon} <b>${x.d.sl}</b> ${esc(tenMon(x.d))}
+        ${x.d.ghichu ? `<br><span class="gc">📝 ${esc(x.d.ghichu)}</span>` : ''}</div>
+        <button class="nut len" data-act="len" data-v="${x.d.id}">${x.tram === 'ca' ? 'Đã múc lên' : 'Đã lên bàn'}</button>
+        ${x.tram === 'ca' ? '' : `<button class="nut ht" data-act="ht" data-v="${x.d.id}">↩</button>`}</div></div>`).join('');
+}
+
+// ===== Tab Quầy: đúng hàng đợi của từng bếp =====
+function veQuay() {
+  const seg = `<div class="seg">${BEP.map(t => `<button class="${t === quay ? 'chon' : ''}" data-act="quay" data-v="${t}">${TRAM[t].icon} ${TRAM[t].ten}</button>`).join('')}</div>`;
+  const ds = tatCaDong().filter(x => x.tram === quay);
+  const dang = ds.filter(x => x.d.tt === 'moi');
+  const ls = ds.filter(x => x.d.tt !== 'moi');
+  const seg2 = `<div class="seg"><button class="${!quayLichSu ? 'chon' : ''}" data-act="ls" data-v="0">Đang làm (${dang.length})</button><button class="${quayLichSu ? 'chon' : ''}" data-act="ls" data-v="1">Lịch sử (${ls.length})</button></div>`;
+  const hotro = quay !== 'nuoc' ? `<button class="hotro" data-act="nhome" data-v="${quay}">🙋 Nhờ mẹ hỗ trợ ${TRAM[quay].day.toLowerCase()}</button>` : '';
+  let than;
+  if (!quayLichSu) {
+    const nhom = {};
+    dang.forEach(x => { const k = x.b.so + '-' + x.li; (nhom[k] = nhom[k] || { b: x.b, l: x.l, li: x.li, ds: [] }).ds.push(x.d); });
+    const the = Object.values(nhom).sort((a, b) => (b.ds.some(d => d.uu_tien) - a.ds.some(d => d.uu_tien)) || (a.l.gio - b.l.gio));
+    than = the.length ? the.map(n => `
+      <div class="the ${n.ds.some(d => d.uu_tien) ? 'ut' : ''}">
+        ${n.ds.some(d => d.uu_tien) ? '<span class="nhan-ut">↩ LÀM LẠI – ƯU TIÊN</span>' : ''}
+        <div class="dau"><span class="ban ${n.b.ten ? 'phu' : ''}">${esc(tenBan(n.b))}</span><span class="nhan ${n.l.nhan === 'đơn mới' ? 'moi' : 'them'}">${n.l.nhan}</span>
+          <span class="phut">gọi ${gioVN(n.l.gio)} · chờ ${phut(n.l.gio)}</span></div>
+        ${n.ds.map(d => `<div class="dong" style="border:0"><div class="ten"><b>${d.sl}</b> ${esc(tenMon(d))}${d.ghichu ? `<br><span class="gc">📝 ${esc(d.ghichu)}</span>` : ''}</div></div>`).join('')}
+        <div class="duoi"><span></span><button class="nut" data-act="xongnhom" data-v="${n.b.so}" data-li="${n.li}">Xong (bấm thay bếp)</button></div>
+      </div>`).join('') : `<div class="trong">${TRAM[quay].day} đang trống</div>`;
+  } else {
+    const sx = ls.sort((a, b) => b.d.xong_luc - a.d.xong_luc);
+    than = sx.length ? sx.map(x => `
+      <div class="the"><div class="dau"><span class="ban ${x.b.ten ? 'phu' : ''}">${esc(tenBan(x.b))}</span><span class="phut">xong lúc ${gioVN(x.d.xong_luc)}${x.d.tt === 'len' ? ' · đã lên' : ''}</span></div>
+        <div class="dong" style="border:0"><div class="ten"><b>${x.d.sl}</b> ${esc(tenMon(x.d))}</div>
+        <button class="nut ht" data-act="ht" data-v="${x.d.id}">Hoàn tác</button></div></div>`).join('') : `<div class="trong">Chưa có món nào xong</div>`;
+  }
+  return seg + hotro + seg2 + than;
+}
+
+// ===== Hộp nổi =====
+function moHop(h) { hop = h; veHop(); document.getElementById('hop').classList.remove('an'); }
+function dongHop() { hop = null; document.getElementById('hop').classList.add('an'); }
+// Nút chọn bàn: 14 bàn số + 5 bàn phụ (không số, hiện tên khi có khách)
+function nutBan(s, act, laDoi) {
+  const co = timBan(s);
+  const ten = laPhu(s) ? (co ? esc(co.ten) : 'Bàn phụ') : s;
+  const nho = co ? (laDoi ? 'gộp' : 'có khách') : 'trống';
+  const chon = (laDoi ? hop.den : hop.chonSo) === s ? 'chon' : '';
+  return `<button class="${chon} ${co ? '' : 'trongban'} ${laPhu(s) ? 'phu' : ''}" data-act="${act}" data-v="${s}" ${co && !laDoi ? 'disabled' : ''}>${ten}<small>${nho}</small></button>`;
+}
+function luoiBan(act, laDoi, boQua) {
+  return `<div class="luoi-ban">${SLOT_CHINH.filter(s => s !== boQua).map(s => nutBan(s, act, laDoi)).join('')}</div>
+    <div class="goc" style="margin:0">Bàn phụ (mở khi đông – ghi tên lúc mở):</div>
+    <div class="luoi-ban">${SLOT_PHU.filter(s => s !== boQua).map(s => nutBan(s, act, laDoi)).join('')}</div>`;
+}
+const oTenPhu = () => `<input class="o-chu" data-inp="tenphu" maxlength="30" placeholder="Tên bàn phụ, vd: bàn ngoài cửa, bàn trong góc" value="${esc(hop.tenPhu || '')}">`;
+// Trạng thái nút Gửi (cập nhật cả khi đang gõ tên bàn phụ)
+function nutGui() {
+  const moi = !hop.so, so = moi ? hop.chonSo : hop.so;
+  const coMon = Object.values(hop.sl).some(n => n > 0);
+  const thieuTen = moi && laPhu(so) && !(hop.tenPhu || '').trim();
+  const ten = !so ? '' : laPhu(so) ? (moi ? (hop.tenPhu || '').trim() || 'bàn phụ' : tenBan(timBan(so))) : 'bàn ' + so;
+  return { ok: coMon && so && !thieuTen, chu: moi ? (!so ? 'Chọn bàn trước' : thieuTen ? 'Ghi tên bàn phụ trước' : `Gửi đơn mới – ${ten}`) : `Gửi gọi thêm – ${ten}` };
+}
+function veNhomXeo() {
+  const keys = Object.keys(hop.sl).filter(k => k.startsWith('xeo|') && hop.sl[k] > 0);
+  return `<div class="nhom">🔥 Bếp xèo · Bánh xèo ${tien(MON.xeo.gia)}/phần</div>
+    <div class="goc" style="margin:2px 0">Chạm loại để thêm 1 phần:</div>
+    <div class="chips">${LOAI_XEO.map(L => `<button class="chip" data-act="themloai" data-v="${L}">+ ${hoaDau(L)}</button>`).join('')}</div>
+    <div class="hang-go"><input class="o-chu" data-inp="loaixeo" maxlength="40" placeholder="Hoặc gõ kết hợp: tôm thịt…" value="${esc(hop.chuXeo || '')}"><button class="nut" data-act="themloaigo">Thêm</button></div>
+    <div class="chips" id="goiy-xeo"></div>` +
+    keys.map(k => dongMonHop(k)).join('') +
+    (keys.length ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-xeo" maxlength="80" placeholder="Ghi chú cho bếp xèo (vd: giòn kỹ)" value="${esc(hop.gc.xeo || '')}">` : '');
+}
+const dongMonHop = (k) => `<div class="dong-mon"><div class="ten">${esc(tenKey(k))}<br><small>${tien(giaKey(k))}${MON[k.split('|')[0]].tam ? ' (giá tạm)' : ''}</small></div>
+  <button data-act="hopsl" data-v="${esc(k)}" data-d="-1">−</button><span class="sl">${hop.sl[k] || 0}</span><button data-act="hopsl" data-v="${esc(k)}" data-d="1">+</button></div>`;
+function veHop() {
+  const k = document.querySelector('#hop .khung');
+  const dauHop = (tieuDe) => `<div class="hop-dau"><h2>${tieuDe}</h2><button class="dong-hop" data-act="donghop">✕ Đóng</button></div>`;
+  if (hop.loai === 'ghichu') {
+    const b = timBan(hop.so);
+    k.innerHTML = dauHop(`${esc(tenBan(b))} – thiếu đồ / khách xin thêm`) + `
+      <div>Chạm 1 lần là ghi ngay:</div>
+      <div class="chips">${GOI_Y.map(g => `<button class="chip" data-act="themnhanh" data-v="${esc(g)}">${esc(g)}</button>`).join('')}</div>
+      <div style="margin-top:6px">Khách xin thêm món <b>có tính tiền</b>:</div>
+      <div class="dong-mon"><div class="ten">🐟 Cá kho<br><small>${tien(MON.cakho.gia)}/con · cộng vào hóa đơn</small></div>
+        <button data-act="soca" data-d="-1">−</button><span class="sl">${hop.soCa}</span><button data-act="soca" data-d="1">+</button></div>
+      <button class="nut dai" style="background:var(--cam)" data-act="themcakho">Thêm ${hop.soCa} cá kho vào hóa đơn · ${tien(hop.soCa * MON.cakho.gia)}</button>
+      <div style="margin-top:10px">Hoặc gõ chi tiết (vd "Rau sống – thêm diếp cá, 2 dĩa"):</div>
+      <input class="o-chu" data-inp="ghichu" maxlength="80" placeholder="Gõ: rau sống, xoài…" value="${esc(hop.chu || '')}">
+      <div class="chips" id="goiy-loc"></div>
+      <button class="nut dai" data-act="themghichu">Ghi vào ${esc(tenBan(b))}</button>
+      <div class="muc">Đang cần mang ở ${esc(tenBan(b))}</div>
+      ${b.can_mang.length ? b.can_mang.map(c => `<div class="dong"><div class="ten">📋 <b>${esc(c.ten)}</b>${c.chi_tiet ? ' – ' + esc(c.chi_tiet) : ''}</div>
+        <button class="nut" data-act="mangxong" data-v="${c.id}" data-b="${b.so}">Xong</button></div>`).join('') : '<div class="trong">Không thiếu gì</div>'}`;
+    veGoiYLoc();
+  } else if (hop.loai === 'goimon') {
+    const moi = !hop.so;
+    const chon = Object.entries(hop.sl).filter(([, n]) => n > 0);
+    const tong = chon.reduce((s, [m, n]) => s + n * giaKey(m), 0);
+    const luoi = moi ? `<div>Chọn bàn:</div>` + luoiBan('hopban', false) + (laPhu(hop.chonSo) ? oTenPhu() : '') : '';
+    const nhom = Object.keys(TRAM).map(t => {
+      if (t === 'xeo') return veNhomXeo();
+      const mon = Object.keys(MON).filter(m => MON[m].tram === t);
+      const coMon = mon.some(m => hop.sl[m] > 0);
+      return `<div class="nhom">${TRAM[t].icon} ${t === 'ca' ? 'Cá kho – phục vụ múc mang lên' : TRAM[t].day}</div>` + mon.map(dongMonHop).join('') +
+        (coMon && t !== 'ca' ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-${t}" maxlength="80" placeholder="Ghi chú cho ${TRAM[t].day.toLowerCase()} (không bắt buộc)" value="${esc(hop.gc[t] || '')}">` : '');
+    }).join('');
+    const g = nutGui();
+    k.innerHTML = dauHop(moi ? 'Đơn mới (phục vụ nhập hộ)' : `${esc(tenBan(timBan(hop.so)))} – gọi thêm món`) + luoi + nhom + `
+      <div class="tom"><div>${chon.length ? esc(chon.map(([m, n]) => n + ' ' + tenKey(m)).join(', ')) + ' · <b>' + tien(tong) + '</b>' : 'Chưa chọn món nào'}</div>
+        <button class="nut dai" id="nut-gui" data-act="guimon" ${g.ok ? '' : 'disabled'}>${esc(g.chu)}</button></div>`;
+    veGoiYXeo();
+  } else if (hop.loai === 'doiban') {
+    const b = timBan(hop.so);
+    if (!hop.den) {
+      k.innerHTML = dauHop(`Đổi / gộp ${esc(tenBan(b))}`) + `<div>Khách chuyển sang bàn nào?</div>` + luoiBan('doiden', true, b.so) +
+        `<div class="goc">Bàn trống → <b>chuyển</b>. Bàn có khách → <b>gộp</b> 2 bàn thành 1 phiên.</div>`;
+    } else {
+      const den = timBan(hop.den);
+      const canTen = !den && laPhu(hop.den);
+      k.innerHTML = dauHop(den ? 'Xác nhận gộp bàn' : 'Xác nhận đổi bàn') + `
+        <p style="font-size:18px">${den ? `Gộp <b>${esc(tenBan(b))}</b> vào <b>${esc(tenBan(den))}</b>? Các lượt gọi xếp theo giờ, bếp giữ nguyên thứ tự làm.`
+          : `Chuyển khách từ <b>${esc(tenBan(b))}</b> sang <b>${canTen ? 'bàn phụ' : 'bàn ' + hop.den}</b>? Bếp và mẹ sẽ thấy tên bàn mới, giữ nguyên thứ tự.`}</p>
+        ${canTen ? oTenPhu() : ''}
+        <div class="hanhdong"><button class="nut vien" data-act="doiden" data-v="">Chọn lại</button><button class="nut" id="nut-doi" data-act="xacnhandoi" ${canTen && !(hop.tenPhu || '').trim() ? 'disabled' : ''}>Xác nhận</button></div>`;
+    }
+  }
+}
+// Gợi ý lọc theo chữ đang gõ (gõ "rau" → hiện "Rau sống")
+function veGoiYLoc() {
+  const el = document.getElementById('goiy-loc');
+  if (!el || !hop) return;
+  const tu = khongDau(hop.chu || '');
+  const goiY = tu ? GOI_Y.filter(g => khongDau(g).includes(tu.split('–')[0].trim())) : [];
+  el.innerHTML = goiY.map(g => `<button class="chip" data-act="dienghichu" data-v="${esc(g)}">↳ ${esc(g)}</button>`).join('');
+}
+// Loại bánh xèo: gõ không dấu cũng tự sửa ("tom thit" → "tôm thịt")
+function chuanLoai(s) {
+  const w = String(s).toLowerCase().split(/[\s,+]+/).filter(Boolean), ra = [];
+  for (let i = 0; i < w.length; i++) {
+    if (i + 1 < w.length && khongDau(w[i] + ' ' + w[i + 1]) === 'thap cam') { ra.push('thập cẩm'); i++; continue; }
+    ra.push(LOAI_XEO.find(L => !L.includes(' ') && khongDau(L) === khongDau(w[i])) || w[i]);
+  }
+  return ra.join(' ');
+}
+const doDang = (chu) => chu.match(/([^\s,+]*)$/)[1];   // chữ đang gõ dở ở cuối
+function veGoiYXeo() {
+  const el = document.getElementById('goiy-xeo');
+  if (!el || !hop) return;
+  const chu = hop.chuXeo || '';
+  if (!chu.trim()) { el.innerHTML = ''; return; }
+  const dd = doDang(chu), daCo = khongDau(chuanLoai(chu.slice(0, chu.length - dd.length)));
+  const goiY = LOAI_XEO.filter(L => !daCo.includes(khongDau(L)) && (!dd || khongDau(L).startsWith(khongDau(dd))));
+  el.innerHTML = goiY.map(L => `<button class="chip" data-act="dienloai" data-v="${L}">↳ ${L}</button>`).join('') +
+    `<div class="xem-truoc">Bếp sẽ thấy: <b>Bánh xèo ${esc(chuanLoai(chu))}</b></div>`;
+}
+function themLoaiGo() {
+  const s = chuanLoai(hop.chuXeo || '');
+  if (!s) { bao('Gõ loại bánh xèo trước (vd: tôm thịt)'); return; }
+  const k = 'xeo|' + s;
+  hop.sl[k] = (hop.sl[k] || 0) + 1; hop.chuXeo = ''; veHop();
+}
+function ghiCanMang(so, chu) {
+  const [ten, ...con] = chu.split(/\s+[–-]\s+/);
+  if (!ten.trim()) return;
+  const b = timBan(so);
+  b.can_mang.push({ id: moiId(), ten: ten.trim(), chi_tiet: con.join(' – ').trim(), luc: Date.now() });
+  bao(tenBan(b) + ': đã ghi cần mang ' + ten.trim());
+}
+
+// ===== Vẽ toàn màn =====
+const GOI_Y_SX = {
+  moi: 'Bàn vừa vào ở trên → đi setup.',
+  lau: 'Bàn vào sớm ở trên (kể cả bàn đã đủ món).',
+  cho: 'Chỉ bàn còn món bếp đang làm. Món gọi SỚM NHẤT ở trên (#1, #2…) – đúng thứ tự order. Bàn vào lâu mà mới gọi thêm thì tính theo giờ gọi thêm.',
+};
+let moGhim = false;   // thanh ghim đang thả xuống?
+function veGhim() {
+  const el = document.getElementById('ghimbar');
+  const ds = BAN.filter(b => b.ghim).sort((a, b) => a.ghim - b.ghim);
+  el.style.top = document.getElementById('thanh').offsetHeight + 'px';
+  if (!ds.length) { el.classList.add('an'); moGhim = false; return; }
+  el.classList.remove('an');
+  el.innerHTML = `<button class="ghim-dau" data-act="moghim">${moGhim ? '▴' : '▾'} 📌 Đã ghim ${ds.length}/${GHIM_TOI_DA}: <b>${ds.map(b => esc(tenBan(b))).join(' · ')}</b></button>` +
+    (moGhim ? ds.map(b => `<div class="ghim-dong"><button class="ghim-di" data-act="moban" data-v="${b.so}"><b>${b.uutien ? '⚡ ' : ''}${esc(tenBan(b))}</b> → xem bàn
+      <small>vào ${gioVN(vaoLuc(b))} · ${conCho(b) ? 'còn ' + conCho(b) + ' món chưa lên' : 'đủ món'}${b.can_mang.length ? ' · 📋 cần mang ' + b.can_mang.length : ''}${b.setup ? '' : ' · chưa setup'}</small></button>
+      <button class="nut ht" data-act="ghim" data-v="${b.so}">Bỏ ghim</button></div>`).join('') : '');
+}
+function ve() {
+  veThanh();
+  veGhim();
+  document.getElementById('congcu').classList.toggle('an', tab !== 'ban');
+  document.getElementById('loc-chualen').classList.toggle('chon', chiChuaLen);
+  ['moi', 'lau', 'cho'].forEach(s => document.getElementById('sx-' + s).classList.toggle('chon', sapXep === s));
+  document.getElementById('goiy-sx').textContent = GOI_Y_SX[sapXep];
+  document.getElementById('noidung').innerHTML = (tab === 'ban' ? veTongQuan() : tab === 'mang' ? veChoMang() : veQuay()) +
+    `<button class="reset" data-act="reset">Làm lại dữ liệu mẫu</button>`;
+  document.getElementById('nav-mang').textContent = `Chờ mang (${choMangDs().length})`;
+  ['ban', 'mang', 'quay'].forEach(t => document.getElementById('nav-' + t).classList.toggle('chon', t === tab));
+}
+function bao(chu, ms = 2500) {
+  const el = document.getElementById('thongbao');
+  el.textContent = chu; el.style.display = 'block';
+  clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms);
+}
+
+// ===== Gõ chữ =====
+document.addEventListener('input', (e) => {
+  const k = e.target.dataset.inp;
+  if (k === 'tim') { q = e.target.value; ve(); }
+  else if (k === 'ghichu') { hop.chu = e.target.value; veGoiYLoc(); }
+  else if (k === 'loaixeo') { hop.chuXeo = e.target.value; veGoiYXeo(); }
+  else if (k === 'tenphu') {
+    hop.tenPhu = e.target.value;
+    if (hop.loai === 'goimon') { const g = nutGui(), n = document.getElementById('nut-gui'); n.disabled = !g.ok; n.textContent = g.chu; }
+    else document.getElementById('nut-doi').disabled = !e.target.value.trim();
+  }
+  else if (k && k.startsWith('gc-')) { hop.gc[k.slice(3)] = e.target.value; }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.dataset.inp === 'loaixeo') { e.preventDefault(); themLoaiGo(); }
+});
+
+// ===== Bấm nút =====
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'hop') { dongHop(); return; }          // chạm nền tối để đóng hộp
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const act = el.dataset.act, v = el.dataset.v, now = Date.now();
+  switch (act) {
+    case 'am': {
+      if (!amBat) {
+        try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); amBat = true; } catch (err) {}
+        chuong('phucvu');
+      } else amBat = false;
+      el.classList.toggle('bat', amBat);
+      el.textContent = amBat ? '🔔 Âm báo: BẬT' : '🔕 Bật âm báo';
+      return;
+    }
+    case 'tab': tab = v; window.scrollTo(0, 0); break;
+    case 'xemquay': tab = 'quay'; quay = v; quayLichSu = false; break;
+    case 'quay': quay = v; break;
+    case 'ls': quayLichSu = v === '1'; break;
+    case 'sx': sapXep = v; break;
+    case 'chualen': chiChuaLen = !chiChuaLen; break;
+    case 'mo': moRong.has(v) ? moRong.delete(v) : moRong.add(v); break;
+    case 'moghim': moGhim = !moGhim; break;
+    case 'uutien': {
+      const b = timBan(v); b.uutien = !b.uutien;
+      bao(b.uutien ? `⚡ Đã đánh dấu ưu tiên ${tenBan(b)}` : `Bỏ đánh dấu ưu tiên ${tenBan(b)}`); break;
+    }
+    case 'moban': {
+      tab = 'ban'; moGhim = false;
+      q = ''; chiChuaLen = false; document.getElementById('tim').value = '';
+      moRong.add(v); ve();
+      document.getElementById('the-' + v)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    // Ghim: bàn đang làm không bị trôi khi có đơn mới
+    case 'ghim': {
+      const b = timBan(v);
+      if (b.ghim) { b.ghim = null; bao('Bỏ ghim ' + tenBan(b)); }
+      else if (BAN.filter(x => x.ghim).length >= GHIM_TOI_DA) { bao(`Đã ghim đủ ${GHIM_TOI_DA} bàn – bỏ ghim một bàn trước`); return; }
+      else { b.ghim = now; bao('📌 Đã ghim ' + tenBan(b) + ' – xem ở thanh ghim phía trên'); }
+      break;
+    }
+    // Setup: bấm tay, có hoàn tác
+    case 'setup': timBan(v).setup = true; bao(tenBan(timBan(v)) + ': đã setup'); break;
+    case 'bosetup': timBan(v).setup = false; bao(tenBan(timBan(v)) + ': hoàn tác setup → chưa setup'); break;
+    // Đồ cần mang (giữ suốt phiên)
+    case 'moghichu': moHop({ loai: 'ghichu', so: v, chu: '', soCa: 1 }); return;
+    case 'soca': hop.soCa = Math.max(1, Math.min(20, hop.soCa + +el.dataset.d)); veHop(); return;
+    case 'themnhanh': ghiCanMang(hop.so, v); veHop(); break;
+    case 'dienghichu': hop.chu = v + ' – '; veHop(); { const i = document.querySelector('[data-inp="ghichu"]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
+    case 'themghichu': if ((hop.chu || '').trim()) { ghiCanMang(hop.so, hop.chu); hop.chu = ''; veHop(); } break;
+    case 'themcakho': {
+      const b = timBan(hop.so);
+      b.luot.push({ gio: now, nhan: 'gọi thêm', nguon: 'phục vụ nhập hộ', ds: [dong('cakho', hop.soCa, 'moi')] });
+      chuong('phucvu');
+      bao(`🐟 ${tenBan(b)}: +${hop.soCa} cá kho vào hóa đơn – nằm ở "Chờ mang" để múc`, 3500);
+      hop.soCa = 1; veHop(); break;
+    }
+    case 'mangxong': {
+      const b = timBan(el.dataset.b);
+      const c = b.can_mang.find(c => c.id === +v);
+      if (!c) break;
+      b.can_mang = b.can_mang.filter(c => c.id !== +v);
+      bao(tenBan(b) + ': đã mang ' + c.ten);
+      if (hop) veHop();
+      break;
+    }
+    // Món
+    case 'xong': { const x = timDong(+v); Object.assign(x.d, { tt: 'xong', xong_luc: now, uu_tien: false }); baoXong(x); break; }
+    case 'xongnhom': {
+      const b = timBan(v), ds = b.luot[+el.dataset.li].ds.filter(d => MON[d.mon].tram === quay && d.tt === 'moi');
+      ds.forEach(d => Object.assign(d, { tt: 'xong', xong_luc: now, uu_tien: false }));
+      chuong('phucvu');
+      bao(`🔔 Máy phục vụ (Chờ mang): ${tenBan(b)} – ${ds.map(d => d.sl + ' ' + tenMon(d)).join(', ')} xong`, 3500);
+      break;
+    }
+    case 'giaxong': {
+      const x = tatCaDong().filter(x => BEP.includes(x.tram) && x.d.tt === 'moi')
+        .sort((a, b) => (b.d.uu_tien - a.d.uu_tien) || (a.l.gio - b.l.gio))[0];
+      if (!x) { bao('Không còn món nào đang làm'); return; }
+      Object.assign(x.d, { tt: 'xong', xong_luc: now, uu_tien: false }); baoXong(x); break;
+    }
+    case 'len': { const x = timDong(+v); Object.assign(x.d, { tt: 'len', len_luc: now }); bao(tenBan(x.b) + ': đã lên ' + tenMon(x.d)); break; }
+    case 'ht': {
+      const x = timDong(+v);
+      Object.assign(x.d, { tt: 'moi', uu_tien: x.tram !== 'ca', xong_luc: null, len_luc: null });
+      if (x.tram === 'ca') { chuong('phucvu'); bao(`Hoàn tác: ${tenBan(x.b)} – cá kho quay lại "Chờ mang"`); }
+      else { chuong('bep'); bao(`🔔 Máy ${TRAM[x.tram].day}: chuông + rung – ${tenBan(x.b)} làm lại ${tenMon(x.d)} (ưu tiên)`, 3500); }
+      break;
+    }
+    case 'nhome': bao('(Mẫu) Đã gửi: nhờ mẹ hỗ trợ ' + TRAM[v].day.toLowerCase()); return;
+    // Gọi món hộ khách / đơn mới
+    case 'mogoimon': moHop({ loai: 'goimon', so: v, sl: {}, gc: {}, chuXeo: '' }); return;
+    case 'modonmoi': moHop({ loai: 'goimon', so: null, chonSo: null, tenPhu: '', sl: {}, gc: {} }); return;
+    case 'hopban': hop.chonSo = v; veHop(); return;
+    case 'hopsl': hop.sl[v] = Math.max(0, Math.min(99, (hop.sl[v] || 0) + +el.dataset.d)); veHop(); return;
+    case 'themloai': { const k = 'xeo|' + v; hop.sl[k] = (hop.sl[k] || 0) + 1; veHop(); return; }
+    case 'dienloai': {
+      const chu = hop.chuXeo || '';
+      hop.chuXeo = chu.slice(0, chu.length - doDang(chu).length) + v + ' ';
+      const i = document.querySelector('[data-inp="loaixeo"]');
+      i.value = hop.chuXeo; i.focus(); i.setSelectionRange(i.value.length, i.value.length); veGoiYXeo(); return;
+    }
+    case 'themloaigo': themLoaiGo(); return;
+    case 'guimon': {
+      const so = hop.so || hop.chonSo;
+      const ds = Object.entries(hop.sl).filter(([, n]) => n > 0).map(([k, n]) => {
+        const [m, loai] = k.split('|');
+        return dong(m, n, 'moi', { gc: hop.gc[MON[m].tram] || '', loai });
+      });
+      let b = timBan(so);
+      if (b) b.luot.push({ gio: now, nhan: 'gọi thêm', nguon: 'phục vụ nhập hộ', ds });
+      else { b = { so, ten: laPhu(so) ? hop.tenPhu.trim() : null, setup: false, ghim: null, tu_ban: null, can_mang: [], luot: [{ gio: now, nhan: 'đơn mới', nguon: 'phục vụ nhập hộ', ds }] }; BAN.push(b); }
+      baoDonMoi(b, ds, b.luot.length > 1 ? 'gọi thêm' : 'đơn mới');
+      dongHop(); moRong.add(so); break;
+    }
+    // Đổi / gộp bàn (phục vụ bấm Xác nhận mới đổi)
+    case 'modoiban': moHop({ loai: 'doiban', so: v, den: null, tenPhu: '' }); return;
+    case 'doiden': hop.den = v || null; hop.tenPhu = ''; veHop(); return;
+    case 'xacnhandoi': {
+      const b = timBan(hop.so), den = timBan(hop.den), gio = gioVN(now), cu = tenBan(b);
+      if (den) {
+        den.luot = [...den.luot, ...b.luot].sort((a, c) => a.gio - c.gio);
+        den.can_mang = [...den.can_mang, ...b.can_mang];
+        den.ghim = den.ghim || b.ghim;
+        den.uutien = den.uutien || b.uutien;
+        den.tu_ban = `Gộp ${cu} vào lúc ${gio}`;
+        BAN = BAN.filter(x => x !== b);
+        bao('Đã gộp ' + cu + ' vào ' + tenBan(den));
+      } else {
+        if (laPhu(hop.den) && !(hop.tenPhu || '').trim()) return;
+        moRong.delete(b.so);
+        b.tu_ban = `Đổi từ ${cu} lúc ${gio}`;
+        b.so = hop.den;
+        b.ten = laPhu(hop.den) ? hop.tenPhu.trim() : null;
+        bao('Đã chuyển ' + cu + ' → ' + tenBan(b));
+      }
+      moRong.add(hop.den); dongHop(); break;
+    }
+    case 'donghop': dongHop(); return;
+    case 'reset': BAN = taoMau(); moRong.clear(); break;
+  }
+  ve();
+});
+setInterval(ve, 30000);   // cập nhật số phút
+ve();
+// PWA: dùng chung service worker với màn chính (mất mạng vẫn mở được màn này)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
