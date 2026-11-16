@@ -148,6 +148,7 @@ async function batDau(user) {
   // Mở lại app: nếu trước đó đang ở quầy nào thì giữ chỗ / tự vào lại
   const truoc = luuDoc('quanbay-vai-tro');
   if (!S.ca && truoc && nv.vai_tro_duoc_phep.includes(truoc)) await vao(truoc, true);
+  if (S.ca && quayVe()) return;   // đã ở trong ca rồi mà đến từ trang khác → quay lại luôn
   nhip();
 }
 
@@ -192,6 +193,7 @@ function ve() {
       <div class="hang"><button class="nut vien" data-tl="${y.id}" data-cho="0">Không</button><button class="nut" data-tl="${y.id}" data-cho="1">Cho vào</button></div></div>`).join('');
   const dangO = S.ca
     ? `<div class="the dang-o">Bạn đang ở: <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">từ ${gio(S.ca.vao_luc)}${S.ca.duoc_cho_vao_boi ? ' · vào nhờ được Cho vào' : ''}</div>
+        <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--do)" href="bai6-tam-het.html">⛔ Báo món tạm hết →</a>
         <button class="nut xam" style="width:100%;margin-top:10px" id="roi">Rời vị trí</button></div>`
     : `<div class="the"><b>Bạn chưa vào ca.</b> Chọn vị trí bên dưới.</div>`;
   const xin = S.xinCuaToi ? `<div class="the">⏳ Đang xin vào <b>${VAI_TRO[S.xinCuaToi.vai_tro]}</b> – chờ người trong quầy bấm Cho vào (còn ${conLai(S.xinCuaToi.luc)}).</div>` : '';
@@ -214,11 +216,19 @@ function ve() {
   document.getElementById('thoat').onclick = dangXuat;
 }
 
+// Mở từ trang khác (vd ?ve=tam-het) → vào ca xong tự chuyển về trang đó
+const VE = { 'tam-het': 'bai6-tam-het.html' }[new URLSearchParams(location.search).get('ve')];
+function quayVe() { if (!VE) return false; bao('Đã vào ca – đang chuyển sang trang Món tạm hết…'); setTimeout(() => location.href = VE, 800); return true; }
+
 // ===== Hành động (đều đi qua máy chủ) =====
 async function vao(v, imLang) {
   const { data, error } = await sb.rpc('vao_ca', { p_vai_tro: v, p_may: MAY });
   if (error) { bao('Lỗi: ' + error.message); return; }
-  if (data.kq === 'ok') { luuGhi('quanbay-vai-tro', v); if (!imLang) bao('Đã vào ' + VAI_TRO[v]); giuMan(); }
+  if (data.kq === 'ok') {
+    luuGhi('quanbay-vai-tro', v); giuMan();
+    if (!imLang && quayVe()) return;   // đến từ trang Món tạm hết → vào ca xong tự quay lại đó
+    if (!imLang) bao('Đã vào ' + VAI_TRO[v]);
+  }
   else if (data.kq === 'day') { if (!imLang) bao(VAI_TRO[v] + ' đã đủ ' + data.toi_da + ' người: ' + (data.dang_o || []).join(', ') + '. Bấm "Xin vào".', 5000); else bao('Mất chỗ ' + VAI_TRO[v] + ' (quầy đã đủ người). Chọn lại vị trí.', 6000); }
   else if (data.kq === 'khong_duoc_phep') bao('Bạn không được làm vị trí này. Báo Hieu.');
   else if (data.kq === 'bi_khoa') { bao('Tài khoản đã bị khóa.'); return dangXuat(); }
@@ -274,7 +284,7 @@ function langNghe() {
       const r = p.new || {};
       if (p.eventType === 'INSERT' && r.trang_thai === 'cho' && r.nhan_vien_id !== me) { chuong('xin'); bao('🔔 Có người xin vào ' + VAI_TRO[r.vai_tro], 5000); }
       if (p.eventType === 'UPDATE' && r.nhan_vien_id === me) {
-        if (r.trang_thai === 'duoc_cho') { chuong('ok'); luuGhi('quanbay-vai-tro', r.vai_tro); bao('✅ Đã được cho vào ' + VAI_TRO[r.vai_tro], 5000); giuMan(); }
+        if (r.trang_thai === 'duoc_cho') { chuong('ok'); luuGhi('quanbay-vai-tro', r.vai_tro); bao('✅ Đã được cho vào ' + VAI_TRO[r.vai_tro], 5000); giuMan(); if (quayVe()) return; }
         if (r.trang_thai === 'khong_cho') bao('❌ Không được cho vào ' + VAI_TRO[r.vai_tro], 5000);
       }
       await taiTatCa();

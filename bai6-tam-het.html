@@ -116,8 +116,8 @@ function ve() {
   let dau;
   if (S.che === 'nv') {
     dau = S.ca
-      ? `<div class="the">Xin chào <b>${esc(S.nv.ten_hien_thi)}</b> · đang ở <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">Hôm nay ${soHet} món tạm hết. Sang ngày mới tự mở bán lại.</div></div>`
-      : `<div class="canh">Bạn <b>chưa vào ca</b> nên chưa bấm được. <a href="bai6-vao-ca.html">→ Vào ca trước</a></div>`;
+      ? `<div class="the">Xin chào <b>${esc(S.nv.ten_hien_thi)}</b> · đang ở <b>${VAI_TRO[S.ca.vai_tro]}</b> · <a href="bai6-vao-ca.html">đổi vị trí</a><div class="goi-y">Hôm nay ${soHet} món tạm hết. Sang ngày mới tự mở bán lại.</div></div>`
+      : `<div class="canh">Bạn <b>chưa vào ca</b> nên chưa bấm được. <a href="bai6-vao-ca.html?ve=tam-het">→ Vào ca trước</a> (vào xong tự quay lại đây)</div>`;
   } else {
     dau = `<div class="the"><b>Menu khách thấy</b><div class="goi-y">Món tạm hết vẫn hiện, gạch ngang. Chạm món tạm hết để xem gợi ý món thay.</div></div>`;
   }
