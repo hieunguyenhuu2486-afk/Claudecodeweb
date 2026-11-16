@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vào ca – Quán Bảy</title>
+<!-- Bài 6.3: trang thử đăng nhập + vào ca + slot + Xin vào / Cho vào (chuông, rung) + nhịp mỗi phút.
+     Kế hoạch: docs/ke-hoach-bai-6.md mục 8. Chỉ chứa publishable key (được phép công khai). -->
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#888; --vien:#e5d5bf; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); }
+  header { padding:12px 16px; background:var(--chu); color:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header h1 { margin:0; font-size:18px; }
+  .nhan { font-size:11px; background:var(--cam); padding:3px 8px; border-radius:99px; white-space:nowrap; }
+  #ketnoi { font-size:12px; color:#ccc; }
+  main { max-width:460px; margin:0 auto; padding:16px; }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:16px; padding:16px; margin-bottom:12px; }
+  h2 { margin:0 0 10px; font-size:21px; }
+  label { display:block; font-weight:700; margin:12px 0 6px; }
+  input { width:100%; font-size:18px; padding:14px; border:2px solid var(--vien); border-radius:12px; background:#fff; }
+  .o-mk { display:flex; gap:6px; } .o-mk input { flex:1; min-width:0; }
+  button { font:inherit; border:0; border-radius:12px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .hien { padding:0 14px; background:#f3e3cc; color:var(--chu); font-weight:700; }
+  .chinh { width:100%; margin-top:16px; padding:16px; font-size:18px; font-weight:800; background:var(--xanh); color:#fff; }
+  .loi { margin-top:12px; padding:12px; border-radius:10px; background:#fdecea; color:var(--do); font-weight:700; }
+  .goi-y { font-size:13px; color:var(--xam); margin-top:6px; }
+  .dang-o { background:#e6f4ea; border-color:var(--xanh); }
+  .dang-o b { font-size:20px; }
+  .quay { display:flex; align-items:center; gap:10px; padding:12px 0; border-top:1px solid #f1e6d6; }
+  .quay:first-of-type { border-top:0; }
+  .quay .ten { flex:1; }
+  .quay .ten b { font-size:18px; display:block; }
+  .quay .ten small { color:var(--xam); }
+  .so { font-weight:800; font-size:18px; white-space:nowrap; }
+  .so.day { color:var(--do); }
+  .nut { padding:12px 14px; font-weight:800; color:#fff; background:var(--xanh); white-space:nowrap; }
+  .nut.xin { background:var(--cam); } .nut.do { background:var(--do); } .nut.xam { background:#777; }
+  .nut.vien { background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .yeucau { border:3px solid var(--cam); background:#fff1e0; animation:nhay 1s 3; }
+  @keyframes nhay { 50% { background:#ffd9a8; } }
+  .yeucau .hang { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .yeucau .hang .nut { padding:16px; font-size:17px; }
+  .bao { position:fixed; left:12px; right:12px; bottom:16px; background:#222; color:#fff; padding:14px; border-radius:12px; font-size:15px; z-index:9; display:none; }
+  .phu { width:100%; margin-top:10px; padding:12px; background:none; color:var(--xam); text-decoration:underline; }
+  .tt { text-align:center; color:var(--xam); padding:30px 0; }
+</style>
+</head>
+<body>
+<header><h1>Quán Bảy – Vào ca</h1><span id="ketnoi"></span><span class="nhan">BÀI 6.3 · THỬ</span></header>
+<main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
+<div class="bao" id="bao"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+<script>
+const URL_KHO = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
+const KHOA_CONG_KHAI = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
+const DUOI_EMAIL = '@nv.banhcanbanhxeobay.id.vn';
+const VAI_TRO = { phuc_vu: '🧑‍🍳 Phục vụ', xeo: '🔥 Bếp xèo', can: '🥘 Bếp căn', nuoc: '🥤 Quầy nước', quan_ly: '📊 Quản lý' };
+const THU_TU = ['phuc_vu', 'xeo', 'can', 'nuoc', 'quan_ly'];
+const HAN_XIN = 3 * 60000;   // xin vào chờ 3 phút thì hết hạn (khớp máy chủ)
+
+const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' },
+});
+const man = document.getElementById('man');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gio = (ts) => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const luuDoc = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const luuGhi = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+
+// Mã riêng của điện thoại này (để biết "đã vào ca ở máy khác")
+const MAY = (() => {
+  let m = luuDoc('quanbay-may');
+  if (!m) { m = 'may-' + (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).slice(2, 18)); luuGhi('quanbay-may', m); }
+  return m;
+})();
+
+// ===== Chuông + rung (giống Bài 5) =====
+let ac = null;
+function moAm() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch (e) {} }
+document.addEventListener('pointerdown', moAm);
+function chuong(loai) {
+  try { navigator.vibrate && navigator.vibrate(loai === 'xin' ? [400, 150, 400, 150, 400] : [200, 100, 200]); } catch (e) {}
+  if (!ac) return;
+  const t = ac.currentTime;
+  const beep = (s, f, d) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = loai === 'xin' ? 'square' : 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t + s); g.gain.exponentialRampToValueAtTime(0.5, t + s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + s + d);
+    o.connect(g).connect(ac.destination); o.start(t + s); o.stop(t + s + d + 0.05); };
+  if (loai === 'xin') [0, 0.4, 0.8].forEach(s => beep(s, 880, 0.3));
+  else { beep(0, 1318, 0.6); beep(0.3, 1046, 0.9); }
+}
+function bao(chu, ms = 3500) {
+  const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block';
+  clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms);
+}
+
+// Giữ màn hình sáng khi đang trong ca (nếu điện thoại hỗ trợ)
+let khoaMan = null;
+async function giuMan() {
+  try { if (S.ca && 'wakeLock' in navigator && document.visibilityState === 'visible' && !khoaMan) { khoaMan = await navigator.wakeLock.request('screen'); khoaMan.onrelease = () => { khoaMan = null; }; } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { giuMan(); nhip(); taiTatCa(); } });
+
+// ===== Trạng thái =====
+const S = { user: null, nv: null, ca: null, quay: {}, xinCuaToi: null, yeuCau: [], coTen: true, dangLam: false };
+
+// ===== Đăng nhập =====
+function veDangNhap(loiTruoc) {
+  S.user = null;
+  man.innerHTML = `<form class="the" id="form"><h2>Đăng nhập</h2>
+    <label for="ten">Tên đăng nhập</label>
+    <input id="ten" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="vd: lan">
+    <label for="mk">Mật khẩu</label>
+    <div class="o-mk"><input id="mk" name="password" type="password" autocomplete="current-password"><button type="button" class="hien" id="hien">Hiện</button></div>
+    <button class="chinh" id="nut">Đăng nhập</button>
+    ${loiTruoc ? `<div class="loi">${esc(loiTruoc)}</div>` : ''}</form>`;
+  document.getElementById('hien').onclick = () => { const mk = document.getElementById('mk'); const an = mk.type === 'password'; mk.type = an ? 'text' : 'password'; document.getElementById('hien').textContent = an ? 'Ẩn' : 'Hiện'; };
+  document.getElementById('form').onsubmit = async (e) => {
+    e.preventDefault(); moAm();
+    const ten = document.getElementById('ten').value.trim().toLowerCase(), mk = document.getElementById('mk').value;
+    if (!/^[a-z0-9_]{2,20}$/.test(ten)) return veDangNhap('Tên đăng nhập chỉ gồm chữ thường không dấu, số, dấu _ (2–20 ký tự).');
+    if (!mk) return veDangNhap('Chưa nhập mật khẩu.');
+    const nut = document.getElementById('nut'); nut.disabled = true; nut.textContent = 'Đang đăng nhập…';
+    const { data, error } = await sb.auth.signInWithPassword({ email: ten + DUOI_EMAIL, password: mk });
+    if (error) {
+      const m = (error.message || '').toLowerCase();
+      return veDangNhap(m.includes('invalid login') ? 'Sai tên đăng nhập hoặc mật khẩu.' : m.includes('fetch') ? 'Không kết nối được. Kiểm tra Wi-Fi / 4G.' : 'Không đăng nhập được: ' + error.message);
+    }
+    batDau(data.user);
+  };
+}
+
+// ===== Sau khi đăng nhập =====
+async function batDau(user) {
+  S.user = user;
+  man.innerHTML = `<div class="tt">Đang tải…</div>`;
+  const { data: nv, error } = await sb.from('nhan_vien').select('ten, ten_hien_thi, vai_tro_duoc_phep, phuc_vu_chinh, dang_lam').eq('id', user.id).maybeSingle();
+  if (error || !nv || !nv.dang_lam) {
+    const ly = error ? 'Không đọc được danh sách nhân viên: ' + error.message : !nv ? 'Tài khoản chưa có vai trò. Báo Hieu.' : 'Tài khoản đã bị khóa. Báo Hieu.';
+    man.innerHTML = `<div class="the"><h2>Không vào được</h2><div class="loi">${esc(ly)}</div><button class="phu" id="thoat">Đăng xuất</button></div>`;
+    document.getElementById('thoat').onclick = dangXuat; return;
+  }
+  S.nv = nv;
+  langNghe();
+  await taiTatCa();
+  // Mở lại app: nếu trước đó đang ở quầy nào thì giữ chỗ / tự vào lại
+  const truoc = luuDoc('quanbay-vai-tro');
+  if (!S.ca && truoc && nv.vai_tro_duoc_phep.includes(truoc)) await vao(truoc, true);
+  nhip();
+}
+
+async function taiTatCa() {
+  if (!S.user) return;
+  const me = S.user.id;
+  const [tt, ca, xin] = await Promise.all([
+    sb.rpc('tinh_trang_quay'),
+    sb.from('vao_ca').select('vai_tro, vao_luc, duoc_cho_vao_boi').eq('nhan_vien_id', me).is('roi_luc', null).maybeSingle(),
+    sb.from('xin_vao').select('id, vai_tro, luc').eq('nhan_vien_id', me).eq('trang_thai', 'cho').order('luc', { ascending: false }).limit(1),
+  ]);
+  S.quay = {}; (tt.data || []).forEach(q => S.quay[q.vai_tro] = q);
+  S.ca = ca.data || null;
+  const x = (xin.data || [])[0];
+  S.xinCuaToi = x && Date.now() - new Date(x.luc) < HAN_XIN ? x : null;
+  await taiYeuCau();
+  ve();
+}
+
+// Yêu cầu xin vào quầy của mình (người có quyền Cho vào mới thấy – khóa ở máy chủ)
+async function taiYeuCau() {
+  const me = S.user.id;
+  let ds = null;
+  if (S.coTen) {
+    const r = await sb.rpc('ds_xin_vao_cho');            // có tên người xin (nếu hàm đã được tạo)
+    if (r.error) S.coTen = false; else ds = r.data;
+  }
+  if (!S.coTen) {
+    const r = await sb.from('xin_vao').select('id, vai_tro, luc, nhan_vien_id').eq('trang_thai', 'cho').neq('nhan_vien_id', me);
+    ds = (r.data || []).map(x => ({ ...x, ten_hien_thi: null }));
+  }
+  S.yeuCau = (ds || []).filter(x => Date.now() - new Date(x.luc) < HAN_XIN);
+}
+
+// ===== Vẽ màn chính =====
+function ve() {
+  if (!S.nv) return;
+  const ds = THU_TU.filter(v => S.nv.vai_tro_duoc_phep.includes(v));
+  const conLai = (luc) => { const s = Math.max(0, Math.ceil((HAN_XIN - (Date.now() - new Date(luc))) / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const yc = S.yeuCau.map(y => `<div class="the yeucau"><b>🔔 ${y.ten_hien_thi ? esc(y.ten_hien_thi) : 'Một người'}</b> xin vào <b>${VAI_TRO[y.vai_tro]}</b>
+      <div class="goi-y">lúc ${gio(y.luc)} · còn ${conLai(y.luc)} để trả lời</div>
+      <div class="hang"><button class="nut vien" data-tl="${y.id}" data-cho="0">Không</button><button class="nut" data-tl="${y.id}" data-cho="1">Cho vào</button></div></div>`).join('');
+  const dangO = S.ca
+    ? `<div class="the dang-o">Bạn đang ở: <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">từ ${gio(S.ca.vao_luc)}${S.ca.duoc_cho_vao_boi ? ' · vào nhờ được Cho vào' : ''}</div>
+        <button class="nut xam" style="width:100%;margin-top:10px" id="roi">Rời vị trí</button></div>`
+    : `<div class="the"><b>Bạn chưa vào ca.</b> Chọn vị trí bên dưới.</div>`;
+  const xin = S.xinCuaToi ? `<div class="the">⏳ Đang xin vào <b>${VAI_TRO[S.xinCuaToi.vai_tro]}</b> – chờ người trong quầy bấm Cho vào (còn ${conLai(S.xinCuaToi.luc)}).</div>` : '';
+  const quay = ds.map(v => {
+    const q = S.quay[v] || { toi_da: '?', so_nguoi: 0, ten: [] };
+    const day = q.so_nguoi >= q.toi_da, laToi = S.ca && S.ca.vai_tro === v;
+    const nut = laToi ? `<span class="goi-y">✓ đang ở đây</span>`
+      : day ? `<button class="nut xin" data-xin="${v}" ${S.xinCuaToi ? 'disabled' : ''}>Xin vào</button>`
+      : `<button class="nut" data-vao="${v}">Vào</button>`;
+    return `<div class="quay"><div class="ten"><b>${VAI_TRO[v]}</b><small>${q.ten.length ? esc(q.ten.join(', ')) : 'trống'}</small></div>
+      <span class="so ${day ? 'day' : ''}">${q.so_nguoi}/${q.toi_da}</span>${nut}</div>`;
+  }).join('');
+  man.innerHTML = yc + `<div class="the"><h2>Xin chào ${esc(S.nv.ten_hien_thi)} 👋</h2></div>` + dangO + xin +
+    `<div class="the"><b>Các quầy bạn được làm</b>${quay}<div class="goi-y">Cập nhật tự động. Máy báo "còn đây" mỗi phút; mất kết nối quá 10 phút thì trả chỗ.</div></div>
+     <button class="phu" id="thoat">Đăng xuất (rời vị trí luôn)</button>`;
+  man.querySelectorAll('[data-vao]').forEach(b => b.onclick = () => vao(b.dataset.vao));
+  man.querySelectorAll('[data-xin]').forEach(b => b.onclick = () => xinVao(b.dataset.xin));
+  man.querySelectorAll('[data-tl]').forEach(b => b.onclick = () => traLoi(+b.dataset.tl, b.dataset.cho === '1'));
+  const roi = document.getElementById('roi'); if (roi) roi.onclick = roiViTri;
+  document.getElementById('thoat').onclick = dangXuat;
+}
+
+// ===== Hành động (đều đi qua máy chủ) =====
+async function vao(v, imLang) {
+  const { data, error } = await sb.rpc('vao_ca', { p_vai_tro: v, p_may: MAY });
+  if (error) { bao('Lỗi: ' + error.message); return; }
+  if (data.kq === 'ok') { luuGhi('quanbay-vai-tro', v); if (!imLang) bao('Đã vào ' + VAI_TRO[v]); giuMan(); }
+  else if (data.kq === 'day') { if (!imLang) bao(VAI_TRO[v] + ' đã đủ ' + data.toi_da + ' người: ' + (data.dang_o || []).join(', ') + '. Bấm "Xin vào".', 5000); else bao('Mất chỗ ' + VAI_TRO[v] + ' (quầy đã đủ người). Chọn lại vị trí.', 6000); }
+  else if (data.kq === 'khong_duoc_phep') bao('Bạn không được làm vị trí này. Báo Hieu.');
+  else if (data.kq === 'bi_khoa') { bao('Tài khoản đã bị khóa.'); return dangXuat(); }
+  await taiTatCa();
+}
+async function xinVao(v) {
+  const { data, error } = await sb.rpc('xin_vao_quay', { p_vai_tro: v, p_may: MAY });
+  if (error) return bao('Lỗi: ' + error.message);
+  bao(data.kq === 'ok' ? 'Đã gửi xin vào ' + VAI_TRO[v] + '. Máy người trong quầy đang kêu.' : 'Không xin được: ' + data.kq);
+  await taiTatCa();
+}
+async function traLoi(id, cho) {
+  const { data, error } = await sb.rpc('tra_loi_xin_vao', { p_id: id, p_cho: cho });
+  if (error) return bao('Lỗi: ' + error.message);
+  bao({ ok: cho ? 'Đã cho vào.' : 'Đã từ chối.', het_han: 'Yêu cầu đã hết hạn hoặc người khác đã trả lời.', khong_co_quyen: 'Bạn không ở quầy này nên không cho vào được.', khong_duoc_phep: 'Người này không được làm vị trí đó.' }[data.kq] || data.kq);
+  await taiTatCa();
+}
+async function roiViTri() {
+  await sb.rpc('roi_ca'); luuGhi('quanbay-vai-tro', null);
+  if (khoaMan) { khoaMan.release(); khoaMan = null; }
+  bao('Đã rời vị trí.'); await taiTatCa();
+}
+async function dangXuat() {
+  try { if (S.user) await sb.rpc('roi_ca'); } catch (e) {}
+  luuGhi('quanbay-vai-tro', null);
+  if (kenh) { sb.removeChannel(kenh); kenh = null; }
+  S.nv = null; S.ca = null;
+  await sb.auth.signOut();
+  veDangNhap();
+}
+
+// ===== Nhịp mỗi phút: báo máy chủ "còn đây" =====
+async function nhip() {
+  if (!S.user || !S.nv) return;
+  const { data, error } = await sb.rpc('nhip', { p_may: MAY });
+  if (error || !data) return;
+  if (data.kq === 'may_khac') { luuGhi('quanbay-vai-tro', null); bao('Bạn đã vào ca ở máy khác. Máy này không còn giữ chỗ.', 7000); await taiTatCa(); }
+  else if (data.kq === 'mat_cho') { const v = luuDoc('quanbay-vai-tro'); if (v) await vao(v, true); }
+  else if (data.kq === 'bi_khoa') { bao('Tài khoản đã bị khóa.'); dangXuat(); }
+}
+setInterval(nhip, 60000);
+setInterval(() => { if (S.nv) taiTatCa(); }, 20000);   // cập nhật tình trạng quầy
+setInterval(() => { if (S.nv && (S.yeuCau.length || S.xinCuaToi)) ve(); }, 5000);   // đếm ngược
+
+// ===== Realtime: yêu cầu xin vào đẩy tới ngay (máy kêu) =====
+let kenh = null;
+function langNghe() {
+  if (kenh) return;
+  const me = S.user.id;
+  const ketnoi = document.getElementById('ketnoi');
+  kenh = sb.channel('xin-vao-' + MAY)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'xin_vao' }, async (p) => {
+      const r = p.new || {};
+      if (p.eventType === 'INSERT' && r.trang_thai === 'cho' && r.nhan_vien_id !== me) { chuong('xin'); bao('🔔 Có người xin vào ' + VAI_TRO[r.vai_tro], 5000); }
+      if (p.eventType === 'UPDATE' && r.nhan_vien_id === me) {
+        if (r.trang_thai === 'duoc_cho') { chuong('ok'); luuGhi('quanbay-vai-tro', r.vai_tro); bao('✅ Đã được cho vào ' + VAI_TRO[r.vai_tro], 5000); giuMan(); }
+        if (r.trang_thai === 'khong_cho') bao('❌ Không được cho vào ' + VAI_TRO[r.vai_tro], 5000);
+      }
+      await taiTatCa();
+    })
+    .subscribe((st) => { ketnoi.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase(); });
+}
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  session ? batDau(session.user) : veDangNhap();
+})();
+</script>
+</body>
+</html>
