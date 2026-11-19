@@ -112,7 +112,8 @@ const quayToi = () => S.ca ? S.ca.vai_tro : null;
 const laNguoiNhanMe = () => !!(S.nv && S.nv.nhan_fill && S.ca);
 const laPhucVu = () => quayToi() === 'phuc_vu';
 const doCua = (ma) => S.doFill.find(d => d.ma === ma);
-const tenDo = (b) => b.do_ma ? (doCua(b.do_ma) || { ten: b.do_ma }).ten : b.ten_khac;
+// Không bao giờ hiện mã kỹ thuật (vd "xeo_gia"): chưa tìm thấy tên thì ghi "đồ" chung chung
+const tenDo = (b) => b.do_ma ? ((doCua(b.do_ma) || {}).ten || 'đồ') : (b.ten_khac || 'đồ');
 const chuBao = (b) => QUAY[b.quay] + ' cần ' + tenDo(b).toLowerCase();       // máy mẹ: không hiện ai báo hộ
 const t0 = (b) => b.bao_lai_luc || b.bao_luc;
 // Mức hiện tại: Hết rồi, hoặc Sắp hết mà 5 phút chưa ai nhận → tự lên Hết rồi
@@ -232,11 +233,13 @@ async function batDau(user) {
 async function tai() {
   const [c, d, y] = await Promise.all([
     sb.from('vao_ca').select('vai_tro').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
-    sb.from('do_fill').select('ma, ten, quay, gui_toi, thu_tu').eq('dang_dung', true).order('thu_tu'),
+    // đọc cả nút đã bỏ chọn (dang_dung = false) để báo cũ trong ngày vẫn hiện đúng tên; nút bấm chỉ hiện nút đang dùng
+    sb.from('do_fill').select('ma, ten, quay, gui_toi, thu_tu, dang_dung').order('thu_tu'),
     sb.from('yeu_cau_fill').select('*').eq('ngay', homNay()).order('bao_luc'),
   ]);
   if (d.error) { man.innerHTML = `<div class="the"><div class="loi">Không đọc được danh sách đồ: ${esc(d.error.message)}</div></div>`; return; }
-  S.ca = c.data; S.doFill = d.data; S.dsBao = y.error ? [] : y.data;
+  S.ca = c.data && VAI_TRO[c.data.vai_tro] ? c.data : null;
+  S.doFill = d.data; S.dsBao = y.error ? [] : y.data;
   if (!S.quayBao || (!laPhucVu() && !laQuanLy())) S.quayBao = quayToi() && QUAY[quayToi()] ? quayToi() : 'xeo';
   await taiNguoiNhan();
   ve();
@@ -259,7 +262,7 @@ function ve() {
   if (!S.nv) return;
   const g = giuGo();
   veDai();
-  const ql = laQuanLy(), coCa = !!S.ca;
+  const ql = laQuanLy(), coCa = !!(S.ca && VAI_TRO[S.ca.vai_tro]);   // vị trí lạ → coi như chưa vào ca, không hiện "undefined"
   let h = coCa || ql
     ? `<div class="the">Xin chào <b>${esc(S.nv.ten_hien_thi)}</b>${coCa ? ` · đang ở <b>${VAI_TRO[S.ca.vai_tro]}</b>` : ' · quản lý'} · <a href="bai6-vao-ca.html?ve=fill-do">đổi vị trí</a>
          ${S.nv.nhan_fill ? '<div class="goi-y">Bạn là người <b>nhận fill</b>: máy này kêu + đọc khi có báo.</div>' : ''}</div>`
@@ -289,7 +292,7 @@ function veBaoFill() {
   const tab = (pv || ql) ? `<div class="seg">${Object.keys(QUAY).map(k => `<button class="${k === q ? 'chon' : ''}" data-quay="${k}">${QUAY[k]}</button>`).join('')}</div>
       ${q !== quayToi() ? `<div class="goi-y" style="margin:-4px 0 8px">Đang <b>báo hộ ${QUAY[q]}</b>. Máy mẹ chỉ hiện "${QUAY[q]} cần …".</div>` : ''}` : '';
   const mo = baoHomNay().filter(dangMo);
-  const nut = S.doFill.filter(d => d.quay === q).map(d => {
+  const nut = S.doFill.filter(d => d.quay === q && d.dang_dung !== false).map(d => {
     const b = mo.find(x => x.do_ma === d.ma && x.quay === q);
     let cls = '', nho = d.gui_toi === 'phuc_vu' ? '→ phục vụ' : '';
     if (b) {
