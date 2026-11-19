@@ -7,6 +7,9 @@
 <!-- Bài 6.5 bước 2: trang thử Fill đồ (bảng do_fill, yeu_cau_fill + hàm bao_fill, bao_lai_fill, tra_loi_fill, huy_fill,
      tat_nhac_fill, tinh_trang_nguoi_nhan_fill). Thiết kế: docs/ke-hoach-bai-6.md mục 10.
      Máy mẹ (ô "Nhận fill") kêu + đọc giọng; máy phục vụ cũng kêu + rung + đọc giọng khi bếp báo hết đĩa (Hieu chốt 19/11).
+     Bước 3 (ghi âm, mục 10.10): giữ để nói → tin thoại gửi mẹ (chỗ chứa "tin-thoai"); mẹ giữ để trả lời bằng giọng.
+     Tiếng mẹ trả lời: báo của bếp/quầy nước → tự phát ở máy người báo + máy cùng quầy; báo của phục vụ → chỉ máy người báo,
+     "ting" rồi bấm ▶ mới nghe (Hieu chốt 19/11). Máy mẹ mở trang thì tự xóa tin thoại của ngày trước.
      Chỉ chứa publishable key (được phép công khai). -->
 <style>
   :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --vang:#f1c40f; --xam:#888; --vien:#e5d5bf; }
@@ -70,6 +73,12 @@
   .dai .hang-nut { margin-left:0; }
   .dai .hang-go { margin-top:8px; }
   .dai .hang-go input { font-size:15px; padding:9px; }
+  /* Nút giữ để nói (ghi âm) */
+  .ghi { width:100%; margin-top:10px; padding:18px 12px; font-size:18px; font-weight:800; background:var(--do); color:#fff;
+         user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; }
+  .ghi.nho { width:auto; margin-top:0; padding:11px 12px; font-size:14px; }
+  .ghi.dang { background:#7b241c; animation:nhayGhi 1s infinite; }
+  @keyframes nhayGhi { 50% { opacity:.7; } }
   .bao { position:fixed; left:12px; right:12px; bottom:16px; background:#222; color:#fff; padding:14px; border-radius:12px; font-size:15px; z-index:9; display:none; }
   .phu { width:100%; margin-top:6px; padding:12px; background:none; color:var(--xam); text-decoration:underline; }
   .tt { text-align:center; color:var(--xam); padding:30px 0; }
@@ -113,8 +122,11 @@ const laNguoiNhanMe = () => !!(S.nv && S.nv.nhan_fill && S.ca);
 const laPhucVu = () => quayToi() === 'phuc_vu';
 const doCua = (ma) => S.doFill.find(d => d.ma === ma);
 // Không bao giờ hiện mã kỹ thuật (vd "xeo_gia"): chưa tìm thấy tên thì ghi "đồ" chung chung
-const tenDo = (b) => b.do_ma ? ((doCua(b.do_ma) || {}).ten || 'đồ') : (b.ten_khac || 'đồ');
-const chuBao = (b) => QUAY[b.quay] + ' cần ' + tenDo(b).toLowerCase();       // máy mẹ: không hiện ai báo hộ
+const tenDo = (b) => b.file_thoai ? 'tin thoại' : b.do_ma ? ((doCua(b.do_ma) || {}).ten || 'đồ') : (b.ten_khac || 'đồ');
+// Máy mẹ: không hiện ai báo hộ. Tin thoại: "Bếp xèo – 🎙 tin thoại 6 giây"
+const chuBao = (b) => b.file_thoai ? QUAY[b.quay] + ' – 🎙 tin thoại ' + (b.thoai_giay ? Math.round(b.thoai_giay) + ' giây' : '')
+  : QUAY[b.quay] + ' cần ' + tenDo(b).toLowerCase();
+const chuHet = (b) => b.file_thoai ? 'Hết rồi' : 'Hết ' + tenDo(b).toLowerCase() + ' rồi';
 const t0 = (b) => b.bao_lai_luc || b.bao_luc;
 // Mức hiện tại: Hết rồi, hoặc Sắp hết mà 5 phút chưa ai nhận → tự lên Hết rồi
 const mucHT = (b) => (b.muc === 'het' || (b.trang_thai === 'moi' && Date.now() - Date.parse(t0(b)) >= LEO_THANG)) ? 'het' : 'sap_het';
@@ -122,8 +134,9 @@ const baoHomNay = () => S.dsBao.filter(b => b.ngay === homNay());
 const dangMo = (b) => b.trang_thai === 'moi' || b.trang_thai === 'da_nhan';
 // Máy này có phải máy KÊU cho báo này không
 const mayNhan = (b) => (b.gui_toi === 'me' && laNguoiNhanMe()) || (b.gui_toi === 'phuc_vu' && laPhucVu());
-// Báo của quầy mình (để biết mẹ trả lời, nhắc 7 phút)
-const cuaQuayToi = (b) => b.quay === quayToi() || (S.user && b.bao_boi === S.user.id);
+// Báo "của mình" (nhận câu mẹ trả lời, nhắc 7 phút): người báo; hoặc cùng quầy với báo – trừ quầy phục vụ
+// (báo của phục vụ chỉ tới đúng tài khoản người báo – Hieu chốt 19/11)
+const cuaQuayToi = (b) => !!(S.user && b.bao_boi === S.user.id) || (b.quay === quayToi() && quayToi() !== 'phuc_vu');
 const thuTu = (a, b) => (mucHT(a) === 'het' ? 0 : 1) - (mucHT(b) === 'het' ? 0 : 1) || Date.parse(t0(a)) - Date.parse(t0(b));
 
 // ===== Âm thanh: chuông + giọng đọc, xếp hàng phát lần lượt (giống trang thử âm thanh) =====
@@ -159,23 +172,131 @@ function docCau(cau) {
     try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { ket(); }
   });
 }
+// Tin thoại: tải file từ chỗ chứa (giữ sẵn trong máy để nghe lại nhanh) rồi phát
+const AM = {};
+async function layAm(path) {
+  if (AM[path]) return AM[path];
+  const { data, error } = await sb.storage.from('tin-thoai').download(path);
+  if (error) throw error;
+  return (AM[path] = URL.createObjectURL(data));
+}
+function phatFile(path) {
+  return new Promise(async (xong) => {
+    try {
+      const a = new Audio(await layAm(path)); a.volume = 1;
+      const c = setTimeout(xong, 20000);
+      a.onended = a.onerror = () => { clearTimeout(c); xong(); };
+      await a.play();
+    } catch (e) { bao('Không phát được tin thoại – bấm ▶ để nghe', 5000); xong(); }
+  });
+}
+// Hàng phát: chuông (muc = null thì không chuông) → đọc câu HOẶC phát tin thoại; lần lượt, không chồng tiếng
 const hang = []; let dangPhat = false;
-function phat(muc, cau) { hang.push({ muc, cau }); chayHang(); }
+function phat(muc, cau, file) { hang.push({ muc, cau, file }); chayHang(); }
 async function chayHang() {
-  if (dangPhat) return; dangPhat = true;
-  while (hang.length) { const x = hang.shift(); moAm(); await nghi(chuong(x.muc)); await docCau(x.cau); await nghi(300); }
+  if (dangPhat || GHI.dang) return; dangPhat = true;
+  while (hang.length && !GHI.dang) {
+    const x = hang.shift(); moAm();
+    if (x.muc) await nghi(chuong(x.muc));
+    if (x.file) await phatFile(x.file); else await docCau(x.cau);
+    await nghi(300);
+  }
   dangPhat = false;
 }
-// Câu đọc trên máy mẹ: "Bếp xèo, sắp hết giá" / "Bếp xèo, hết giá"
+// Câu đọc trên máy mẹ: "Bếp xèo, sắp hết giá" / "Bếp xèo, hết giá". Tin thoại thì phát tiếng ghi âm.
 const cauDoc = (b) => QUAY[b.quay] + ', ' + (mucHT(b) === 'het' ? 'hết ' : 'sắp hết ') + tenDo(b).toLowerCase();
+const phatBao = (b) => phat(mucHT(b), b.file_thoai ? null : cauDoc(b), b.file_thoai || null);
+const cauNhac7 = (b) => (b.file_thoai ? QUAY[b.quay] + ', tin thoại' : chuBao(b)) + (b.gui_toi === 'me' ? ', mẹ mang chưa?' : ', mang chưa?');
+
+// ===== Ghi âm: giữ nút để nói, thả tay là gửi (tối đa 15 giây) =====
+const GHI = { dang: false, rec: null, mic: null, manh: [], bd: 0, dem: null, nut: null, xong: null, chuGoc: '' };
+async function batDauGhi(nut, xongCb) {
+  if (GHI.dang) return;
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder)
+    return bao('Máy này không ghi âm được (cần Chrome, trang https).', 5000);
+  GHI.dang = true; GHI.nut = nut; GHI.xong = xongCb; GHI.chuGoc = nut.textContent; GHI.manh = [];
+  nut.classList.add('dang'); nut.textContent = '⏳ Đang mở micro…';
+  try { speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
+  try {
+    GHI.mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (err) {
+    GHI.dang = false; nut.classList.remove('dang'); nut.textContent = GHI.chuGoc;
+    return bao(err.name === 'NotAllowedError'
+      ? 'Máy đang chặn micro: bấm ổ khóa cạnh địa chỉ trang → Quyền → Micro → Cho phép.'
+      : 'Không mở được micro (app khác đang dùng?). Báo miệng giúp.', 7000);
+  }
+  if (!GHI.dang) { GHI.mic.getTracks().forEach(t => t.stop()); return; }   // đã thả tay trong lúc chờ mở micro
+  const kieu = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(k => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(k)) || '';
+  GHI.rec = new MediaRecorder(GHI.mic, kieu ? { mimeType: kieu, audioBitsPerSecond: 32000 } : undefined);
+  GHI.rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) GHI.manh.push(ev.data); };
+  GHI.rec.onstop = xongGhi;
+  GHI.rec.start(); GHI.bd = Date.now();
+  GHI.dem = setInterval(() => {
+    const s = (Date.now() - GHI.bd) / 1000;
+    nut.textContent = '🔴 Đang ghi ' + Math.floor(s) + '/15 giây – thả tay để gửi';
+    if (s >= 15) dungGhi();
+  }, 200);
+}
+function dungGhi() {
+  if (!GHI.dang) return;
+  GHI.dang = false; clearInterval(GHI.dem);
+  if (GHI.nut) { GHI.nut.classList.remove('dang'); GHI.nut.textContent = GHI.chuGoc; }
+  if (GHI.rec && GHI.rec.state !== 'inactive') { try { GHI.rec.stop(); } catch (e) {} }
+  else if (GHI.mic) GHI.mic.getTracks().forEach(t => t.stop());
+}
+function xongGhi() {
+  if (GHI.mic) GHI.mic.getTracks().forEach(t => t.stop());
+  const giay = (Date.now() - GHI.bd) / 1000;
+  const blob = new Blob(GHI.manh, { type: (GHI.rec && GHI.rec.mimeType) || 'audio/webm' });
+  if (giay < 0.6 || !blob.size) { bao('Giữ nút lâu hơn một chút rồi nói.'); chayHang(); return; }
+  const cb = GHI.xong; GHI.xong = null;
+  if (cb) cb(blob, Math.min(15.9, Math.round(giay * 10) / 10));
+  chayHang();
+}
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, () => { if (GHI.dang) dungGhi(); }));
+async function taiTinThoai(blob) {
+  const loai = (blob.type || 'audio/webm').split(';')[0];
+  const duoi = loai.includes('mp4') ? 'm4a' : loai.includes('ogg') ? 'ogg' : 'webm';
+  const ma = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const path = homNay() + '/' + ma + '.' + duoi;
+  const { error } = await sb.storage.from('tin-thoai').upload(path, blob, { contentType: loai, upsert: false });
+  if (error) { bao('Chưa gửi được tin thoại (' + error.message + ') – báo miệng giúp.', 7000); return null; }
+  AM[path] = URL.createObjectURL(blob);
+  return path;
+}
+async function guiTinThoai(blob, giay) {
+  bao('⏳ Đang gửi tin thoại…', 8000);
+  const path = await taiTinThoai(blob); if (!path) return;
+  const data = await goi('bao_fill_thoai', { p_quay: S.quayBao, p_file: path, p_giay: giay, p_muc: S.muc }, '🎙 Đã gửi tin thoại cho mẹ (' + Math.round(giay) + ' giây)');
+  if (data && data.kq === 'ok') { S.muc = 'sap_het'; ve(); }
+}
+async function traLoiThoai(id, blob) {
+  bao('⏳ Đang gửi câu trả lời…', 8000);
+  const path = await taiTinThoai(blob); if (!path) return;
+  await goi('tra_loi_fill_thoai', { p_id: id, p_file: path }, '🎙 Đã trả lời bằng giọng');
+}
+// Máy mẹ / Hieu mở trang → xóa tin thoại của NGÀY TRƯỚC (file chỉ xóa được qua Storage, không xóa bằng SQL)
+async function donTinCu() {
+  try {
+    const kho = sb.storage.from('tin-thoai');
+    const { data: tm } = await kho.list('', { limit: 100 });
+    for (const t of tm || []) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t.name) || t.name >= homNay()) continue;
+      const { data: ds } = await kho.list(t.name, { limit: 1000 });
+      const p = (ds || []).map(f => t.name + '/' + f.name);
+      if (p.length) await kho.remove(p);
+    }
+  } catch (e) {}
+}
 
 // ===== Bộ đếm nhắc (máy tự tính theo giờ lưu trên kho) =====
 const DA_KEU = {};                                   // id → { lan, luc, muc } lần kêu gần nhất trên máy này
 const DA_NHAC7 = (() => { try { return JSON.parse(luuDoc('quanbay-fill-nhac7') || '{}'); } catch (e) { return {}; } })();
 function keuBao(b) {
   DA_KEU[b.id] = { lan: b.bao_lai_lan, luc: Date.now(), muc: mucHT(b) };
-  // Máy mẹ và máy phục vụ (đĩa – Hieu chốt 19/11) đều: chuông + rung + đọc. Phục vụ chưa bấm "Bắt đầu nghe" thì chỉ chuông.
-  phat(mucHT(b), S.nghe ? cauDoc(b) : null);
+  // Máy mẹ và máy phục vụ (đĩa – Hieu chốt 19/11) đều: chuông + rung + đọc (tin thoại thì phát tiếng ghi âm).
+  // Phục vụ chưa bấm "Bắt đầu nghe" thì chỉ chuông.
+  if (S.nghe) phatBao(b); else phat(mucHT(b), null, null);
 }
 function demNhac() {
   if (!S.ca) return;
@@ -195,7 +316,7 @@ function demNhac() {
         const laMayNhan = mayNhan(b);
         if (laMayNhan && !S.nghe && !(b.gui_toi === 'phuc_vu' && ac)) continue;   // máy nhận chưa nghe được → chờ, chưa tính là đã nhắc
         DA_NHAC7[k7] = 1; luuGhi('quanbay-fill-nhac7', JSON.stringify(DA_NHAC7));
-        if (laMayNhan) phat('sap_het', S.nghe ? chuBao(b) + (b.gui_toi === 'me' ? ', mẹ mang chưa?' : ', mang chưa?') : null);
+        if (laMayNhan) phat('sap_het', S.nghe ? cauNhac7(b) : null);
         else { moAm(); chuong('sap_het'); }
       }
     }
@@ -228,6 +349,7 @@ async function batDau(user) {
   if (MAY) await sb.rpc('nhip', { p_may: MAY });     // báo "còn đây" ngay khi mở (nhịp cũ quá 10 phút thì máy chủ coi như chưa vào ca)
   langNghe();
   await tai();
+  if (nv.nhan_fill || laQuanLy()) donTinCu();         // máy mẹ / Hieu: dọn tin thoại ngày trước
 }
 
 async function tai() {
@@ -309,6 +431,8 @@ function veBaoFill() {
     <div class="muc"><button data-muc="sap_het" class="${S.muc === 'sap_het' ? 'chon' : ''}">🟡 Sắp hết</button><button data-muc="het" class="${S.muc === 'het' ? 'chon' : ''}">🔴 Hết rồi</button></div>
     <div class="luoi">${nut}</div>
     <div class="hang-go"><input id="khac" maxlength="60" placeholder="Khác: gõ đồ cần fill…" value="${esc(S.khac)}"><button class="nut cam" id="guiKhac">Báo</button></div>
+    <button class="ghi" data-ghi="bao">🎙 Giữ để nói với mẹ</button>
+    <div class="goi-y" style="margin-top:6px">Hết nhiều thứ / rối: giữ nút đỏ, nói (tối đa 15 giây), thả tay là gửi cho mẹ.</div>
     <div class="goi-y" style="margin-top:6px">Chạm 1 lần là báo (mặc định 🟡 Sắp hết). Hết sạch thì chọn 🔴 trước rồi chạm. Hết hẳn không bổ sung được thì dùng trang <a href="bai6-tam-het.html">Món tạm hết</a>.</div></div>`;
 }
 
@@ -337,14 +461,16 @@ function dongBao(b, che) {
   const ai = b.gui_toi === 'me' ? 'Mẹ' : 'Phục vụ';
   let tl = '';
   if (b.trang_thai === 'moi') tl = `Đã báo ${gio(t0(b))} · chờ ${ai.toLowerCase()} nhận (${phutTruoc(t0(b))}')${b.bao_lai_lan ? ' · báo lại ' + b.bao_lai_lan + ' lần' : ''}${b.tat_nhac ? ' · 🔕 tắt nhắc' : ''}`;
-  else if (b.trang_thai === 'da_nhan') tl = `✅ ${ai}: ${esc(b.tra_loi || 'Đã nhận')} (${gio(b.nhan_luc)})`;
+  else if (b.trang_thai === 'da_nhan') tl = `✅ ${ai}: ${b.tra_loi_thoai && !b.tra_loi ? '🎙 trả lời bằng giọng' : esc(b.tra_loi || 'Đã nhận')} (${gio(b.nhan_luc)})`;
   else if (b.trang_thai === 'khong_con') tl = `⛔ ${ai}: ${esc(b.tra_loi || 'Hết rồi, không còn')}`;
   const nhac7 = b.trang_thai === 'da_nhan' && b.nhan_luc && Date.now() - Date.parse(b.nhan_luc) >= NHAC_7
     ? `<div class="nhac7">${mayNhan(b) ? `Đã nhận ${phutTruoc(b.nhan_luc)} phút rồi – ${b.gui_toi === 'me' ? 'mẹ mang chưa?' : 'mang chưa?'}` : `${ai} nhận ${phutTruoc(b.nhan_luc)} phút rồi – còn thiếu thì bấm Báo lại`}</div>` : '';
   const nut = [];
+  if (b.file_thoai) nut.push(`<button class="nut vien" data-nghe="${esc(b.file_thoai)}">▶ Nghe tin</button>`);
+  if (b.tra_loi_thoai) nut.push(`<button class="nut" data-nghe="${esc(b.tra_loi_thoai)}">▶ Nghe mẹ trả lời</button>`);
   if (mo && (cuaQuayToi(b) || pv)) nut.push(`<button class="nut cam" data-lai="${b.id}">Báo lại</button>`);
   if (b.trang_thai === 'da_nhan' && b.gui_toi === 'me' && laNguoiNhanMe())
-    nut.push(`<button class="nut do-n" data-het="${b.id}" data-loi="Hết ${esc(tenDo(b).toLowerCase())} rồi">Hết ${esc(tenDo(b).toLowerCase())} rồi</button>`);
+    nut.push(`<button class="nut do-n" data-het="${b.id}" data-loi="${esc(chuHet(b))}">${esc(chuHet(b))}</button>`);
   if (mo && che === 'me' && pv && b.trang_thai === 'moi') nut.push(`<button class="nut" data-nhan="${b.id}">Đã nhận (thay mẹ)</button>`);
   if (mo && pv) nut.push(`<button class="nut vien" data-tat="${b.id}" data-v="${b.tat_nhac ? 0 : 1}">${b.tat_nhac ? '🔔 Bật nhắc' : '🔕 Tắt nhắc'}</button>`);
   if (mo && (pv || b.bao_boi === S.user.id)) nut.push(`<button class="nut xam" data-huy="${b.id}">${S.xacHuy === b.id ? 'Chạm lần nữa để hủy' : 'Hủy (báo nhầm)'}</button>`);
@@ -363,13 +489,12 @@ function veDai() {
       <div class="goi-y">${esc(ds.map(chuBao).join(' · '))}</div></div>`;
   } else {
     h = `<div class="dai ${coDo ? 'do' : 'vang'}">${ds.map(b => {
-      const ten = tenDo(b).toLowerCase();
       const goiY = b.gui_toi === 'me'
-        ? `<button class="nut" data-nhan="${b.id}">Đã nhận</button><button class="nut" data-nhan="${b.id}" data-loi="Chờ chút, đang mang ra">Chờ chút, đang mang ra</button><button class="nut do-n" data-het="${b.id}" data-loi="Hết ${esc(ten)} rồi">Hết ${esc(ten)} rồi</button>`
+        ? `<button class="nut" data-nhan="${b.id}">Đã nhận</button><button class="nut" data-nhan="${b.id}" data-loi="Chờ chút, đang mang ra">Chờ chút, đang mang ra</button><button class="nut do-n" data-het="${b.id}" data-loi="${esc(chuHet(b))}">${esc(chuHet(b))}</button>`
         : `<button class="nut" data-nhan="${b.id}">Đã nhận</button>`;
       return `<div class="muc-bao"><div class="tieu">${mucHT(b) === 'het' ? '🔴' : '🟡'} ${esc(chuBao(b))}</div>
         <div class="goi-y">${phutTruoc(t0(b))} phút trước${b.bao_lai_lan ? ' · báo lại ' + b.bao_lai_lan + ' lần' : ''}</div>
-        <div class="hang-nut">${goiY}<button class="nut vien" data-doc="${b.id}">🔊 Nghe lại</button></div>
+        <div class="hang-nut">${goiY}<button class="nut vien" data-doc="${b.id}">🔊 Nghe lại</button>${b.gui_toi === 'me' ? `<button class="ghi nho" data-ghi-tl="${b.id}">🎙 Giữ để trả lời</button>` : ''}</div>
         ${b.gui_toi === 'me' ? `<div class="hang-go"><input id="tl-${b.id}" maxlength="100" placeholder="Hoặc gõ trả lời…"><button class="nut" data-go="${b.id}">Gửi</button></div>` : ''}</div>`;
     }).join('')}${ds.length > 1 ? `<button class="nut vien" id="dongDai" style="width:100%;margin-top:6px">Thu gọn</button>` : ''}</div>`;
   }
@@ -377,7 +502,7 @@ function veDai() {
   daiEl.innerHTML = h; veDai.cu = h;
   ganNut(daiEl);
   const mo = document.getElementById('moDai');
-  if (mo) mo.onclick = () => { S.daiMo = true; moAm(); ds.forEach(b => phat(mucHT(b), cauDoc(b))); ve(); };
+  if (mo) mo.onclick = () => { S.daiMo = true; moAm(); ds.forEach(phatBao); ve(); };
   const dong = document.getElementById('dongDai');
   if (dong) dong.onclick = () => { S.daiMo = false; ve(); };
 }
@@ -392,7 +517,13 @@ function ganNut(goc) {
   q('[data-het]').forEach(b => b.onclick = () => goi('tra_loi_fill', { p_id: +b.dataset.het, p_kieu: 'khong_con', p_loi: b.dataset.loi || null }, '⛔ Đã báo không còn'));
   q('[data-go]').forEach(b => b.onclick = () => { const o = document.getElementById('tl-' + b.dataset.go); if (!o || !o.value.trim()) return bao('Gõ câu trả lời trước.');
     goi('tra_loi_fill', { p_id: +b.dataset.go, p_kieu: 'nhan', p_loi: o.value.trim() }, '✅ Đã gửi trả lời'); });
-  q('[data-doc]').forEach(b => b.onclick = () => { const x = S.dsBao.find(y => y.id === +b.dataset.doc); if (x) phat(mucHT(x), cauDoc(x)); });
+  q('[data-doc]').forEach(b => b.onclick = () => { const x = S.dsBao.find(y => y.id === +b.dataset.doc); if (x) phatBao(x); });
+  q('[data-nghe]').forEach(b => b.onclick = () => { moAm(); phat(null, null, b.dataset.nghe); });
+  // Giữ để nói (báo) / giữ để trả lời (mẹ). Thả tay ở đâu cũng dừng (bắt ở document).
+  q('[data-ghi]').forEach(b => { b.oncontextmenu = (e) => e.preventDefault();
+    b.onpointerdown = (e) => { e.preventDefault(); batDauGhi(b, guiTinThoai); }; });
+  q('[data-ghi-tl]').forEach(b => { b.oncontextmenu = (e) => e.preventDefault();
+    b.onpointerdown = (e) => { e.preventDefault(); const id = +b.dataset.ghiTl; batDauGhi(b, (blob) => traLoiThoai(id, blob)); }; });
   q('[data-tat]').forEach(b => b.onclick = () => goi('tat_nhac_fill', { p_id: +b.dataset.tat, p_tat: b.dataset.v === '1' }, b.dataset.v === '1' ? '🔕 Đã tắt nhắc' : '🔔 Đã bật nhắc'));
   q('[data-huy]').forEach(b => b.onclick = () => {
     const id = +b.dataset.huy;
@@ -412,6 +543,7 @@ const LOI = {
   khong_duoc_phep: 'Bạn không bấm được việc này.', khong_co_do: 'Không có đồ này ở quầy đó.',
   du_lieu_sai: 'Thiếu thông tin – chọn đồ hoặc gõ ô Khác.', het_han: 'Báo này là của hôm trước.',
   da_dong: 'Báo này đã xong – bấm nút đồ để báo mới.', khong_co: 'Không tìm thấy báo.',
+  khong_co_file: 'Tin thoại chưa tải lên được – thử lại hoặc báo miệng.',
 };
 async function goi(ham, thamSo, okChu) {
   const { data, error } = await sb.rpc(ham, thamSo);
@@ -453,18 +585,28 @@ let kenh = null;
 function langNghe() {
   if (kenh) return;
   const kn = document.getElementById('ketnoi');
-  kenh = sb.channel('fill-do').on('postgres_changes', { event: '*', schema: 'public', table: 'yeu_cau_fill' }, (p) => {
+  kenh = sb.channel('fill-do').on('postgres_changes', { event: '*', schema: 'public', table: 'yeu_cau_fill' }, khiBaoDoi)
+    .subscribe(st => { kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase(); if (st === 'SUBSCRIBED' && S.user) taiBao(); });
+}
+// Một báo vừa đổi (báo mới / mẹ trả lời / báo lại) → cập nhật + kêu đúng máy
+function khiBaoDoi(p) {
     const moi = p.new; if (!moi || !moi.id) return;
     const i = S.dsBao.findIndex(x => x.id === moi.id), cu = i >= 0 ? S.dsBao[i] : null;
     if (i >= 0) S.dsBao[i] = moi; else S.dsBao.push(moi);
-    // Người báo: mẹ (hoặc phục vụ) vừa trả lời → "ting" + hiện câu trả lời
-    if (S.ca && cuaQuayToi(moi) && !mayNhan(moi) && cu && (cu.trang_thai !== moi.trang_thai || cu.tra_loi !== moi.tra_loi)
+    // Mẹ trả lời BẰNG GIỌNG: bếp / quầy nước → "ting" + tự phát (máy người báo + máy cùng quầy);
+    // phục vụ → chỉ máy người báo, "ting" rồi bấm ▶ mới nghe (Hieu chốt 19/11)
+    if (S.ca && cuaQuayToi(moi) && !mayNhan(moi) && cu && moi.tra_loi_thoai && moi.tra_loi_thoai !== cu.tra_loi_thoai) {
+      ting();
+      if (laPhucVu()) bao('🎙 Mẹ trả lời bằng giọng: ' + chuBao(moi) + ' – bấm ▶ Nghe mẹ trả lời', 8000);
+      else { bao('🎙 Mẹ trả lời: ' + chuBao(moi), 6000); phat(null, null, moi.tra_loi_thoai); }
+    }
+    // Người báo: mẹ (hoặc phục vụ) vừa trả lời bằng chữ / nút → "ting" + hiện câu trả lời
+    else if (S.ca && cuaQuayToi(moi) && !mayNhan(moi) && cu && (cu.trang_thai !== moi.trang_thai || cu.tra_loi !== moi.tra_loi)
         && (moi.trang_thai === 'da_nhan' || moi.trang_thai === 'khong_con')) {
       ting(); bao((moi.gui_toi === 'me' ? 'Mẹ' : 'Phục vụ') + ': ' + (moi.tra_loi || (moi.trang_thai === 'da_nhan' ? 'Đã nhận' : 'Hết rồi')) + ' – ' + chuBao(moi), 6000);
     }
     if (coTheVe()) ve();   // đang gõ / đang chạm thì để yên, 5 giây sau tự vẽ lại
     demNhac();
-  }).subscribe(st => { kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase(); if (st === 'SUBSCRIBED' && S.user) taiBao(); });
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { if (S.nghe) giuMan(); if (MAY) sb.rpc('nhip', { p_may: MAY }); tai(); } });
 
