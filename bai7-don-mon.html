@@ -142,6 +142,15 @@ function cacTab() {
 // Tô chấm đầy đủ = trứng + xíu mại + da heo: hết 1 thứ là tô đầy đủ tạm hết (như xèo thập cẩm hết 1 nhân)
 const THANH_PHAN = { nuoc_cham: { trung: 'trứng', xiu_mai: 'xíu mại', da_heo: 'da heo' } };
 const thieuThanhPhan = (m) => Object.entries(THANH_PHAN[m.ma] || {}).filter(([ma]) => hetHomNay((S.menu.find(x => x.ma === ma) || {}).tam_het_luc)).map(([, ten]) => ten);
+// Combo (đĩa + tô chấm đầy đủ) KHÔNG khóa: thiếu thành phần thì giá = đĩa lẻ + thành phần còn lại (Hieu chốt 19/11)
+const thieuCombo = (m) => m.kem_to_cham ? thieuThanhPhan({ ma: 'nuoc_cham' }) : [];
+function giaHienTai(m) {
+  if (!m) return 0;
+  const thieu = thieuCombo(m), le = S.menu.find(x => x.ma === m.ma + '_le');
+  if (!thieu.length || !le) return m.gia;
+  return le.gia + Object.keys(THANH_PHAN.nuoc_cham).filter(ma => !thieu.includes(THANH_PHAN.nuoc_cham[ma]))
+    .reduce((a, ma) => a + ((S.menu.find(x => x.ma === ma) || {}).gia || 0), 0);
+}
 const nhanHet = () => S.tuyChon.filter(t => t.ma_mon === 'xeo' && hetHomNay(t.tam_het_luc)).map(t => t.ten);
 const loaiHet = (loai) => { const h = nhanHet(); return h.length > 0 && (loai.includes('thập cẩm') || h.some(n => loai.includes(n))); };
 
@@ -189,7 +198,7 @@ async function tai() {
   if (!S.user) return;
   const [c, m, t, b, p] = await Promise.all([
     sb.from('vao_ca').select('vai_tro, nhip_cuoi').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
-    sb.from('thuc_don').select('ma, ten, nhom, tram, gia, don_vi, thu_tu, tam_het_luc').eq('dang_ban', true).order('thu_tu'),
+    sb.from('thuc_don').select('ma, ten, nhom, tram, gia, don_vi, thu_tu, tam_het_luc, kem_to_cham').eq('dang_ban', true).order('thu_tu'),
     sb.from('tuy_chon_mon').select('ma_mon, ma, ten, tam_het_luc').order('thu_tu'),
     sb.from('ban').select('ma, loai, thu_tu').order('thu_tu'),
     sb.from('phien_ban').select('*').eq('trang_thai', 'dang_an').order('mo_luc'),
@@ -400,12 +409,13 @@ function veGoi() {
         return;
       }
       const n2 = soTrongGio(m.ma, null), thieu = het ? [] : thieuThanhPhan(m), khoa = het || thieu.length > 0;
-      h += `<div class="mon ${khoa ? 'het' : ''}"><div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(m.gia)}/${esc(m.don_vi)}</span>${khoa ? ` <span class="tag-het">TẠM HẾT${thieu.length ? ' – hết ' + esc(thieu.join(', ')) : ''}</span>` : ''}</div>
+      const tc = khoa ? [] : thieuCombo(m);
+      h += `<div class="mon ${khoa ? 'het' : ''}"><div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(giaHienTai(m))}/${esc(m.don_vi)}</span>${tc.length ? ` <span class="tag them">hết ${esc(tc.join(', '))}</span>` : ''}${khoa ? ` <span class="tag-het">TẠM HẾT${thieu.length ? ' – hết ' + esc(thieu.join(', ')) : ''}</span>` : ''}</div>
         ${khoa ? '' : `<div class="sl"><button data-bot="${m.ma}|" ${n2 ? '' : 'disabled'}>−</button><span>${n2}</span><button data-them="${m.ma}|">+</button></div>`}</div>`;
     });
   });
   h += `</div>`;
-  const tong = S.gio.reduce((a, g) => a + g.sl * (S.menu.find(m => m.ma === g.ma)?.gia || 0), 0);
+  const tong = S.gio.reduce((a, g) => a + g.sl * giaHienTai(S.menu.find(m => m.ma === g.ma)), 0);
   h += `<div class="the"><h2>3. Kiểm tra & gửi</h2>${S.gio.length ? S.gio.map((g, i) => `<div class="gio-dong">
       <div class="tren"><div class="ten">${esc(g.ma === 'xeo' ? 'Bánh xèo ' + g.loai : S.menu.find(m => m.ma === g.ma)?.ten || g.ma)}</div>
         <div class="sl"><button data-bot="${g.ma}|${esc(g.loai || '')}">−</button><span>${g.sl}</span><button data-them="${g.ma}|${esc(g.loai || '')}">+</button></div></div>
