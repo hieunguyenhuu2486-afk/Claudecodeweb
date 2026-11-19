@@ -193,6 +193,7 @@ function ve() {
       <div class="hang"><button class="nut vien" data-tl="${y.id}" data-cho="0">Không</button><button class="nut" data-tl="${y.id}" data-cho="1">Cho vào</button></div></div>`).join('');
   const dangO = S.ca
     ? `<div class="the dang-o">Bạn đang ở: <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">từ ${gio(S.ca.vao_luc)}${S.ca.duoc_cho_vao_boi ? ' · vào nhờ được Cho vào' : ''}</div>
+        <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--xanh)" href="bai7-don-mon.html">🧾 Đơn món →</a>
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--cam)" href="bai6-fill-do.html">📣 Fill đồ →</a>
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--do)" href="bai6-tam-het.html">⛔ Báo món tạm hết →</a>
         <button class="nut xam" style="width:100%;margin-top:10px" id="roi">Rời vị trí</button></div>`
@@ -218,7 +219,7 @@ function ve() {
 }
 
 // Mở từ trang khác (vd ?ve=tam-het) → vào ca xong tự chuyển về trang đó
-const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'] }[new URLSearchParams(location.search).get('ve')];
+const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'], 'don-mon': ['bai7-don-mon.html', 'Đơn món'] }[new URLSearchParams(location.search).get('ve')];
 const VE = VE_TRANG && VE_TRANG[0];
 function quayVe() { if (!VE) return false; bao('Đã vào ca – đang chuyển sang trang ' + VE_TRANG[1] + '…'); setTimeout(() => location.href = VE, 800); return true; }
 
