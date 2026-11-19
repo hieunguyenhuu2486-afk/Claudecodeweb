@@ -6,7 +6,7 @@
 <title>Fill đồ – Quán Bảy</title>
 <!-- Bài 6.5 bước 2: trang thử Fill đồ (bảng do_fill, yeu_cau_fill + hàm bao_fill, bao_lai_fill, tra_loi_fill, huy_fill,
      tat_nhac_fill, tinh_trang_nguoi_nhan_fill). Thiết kế: docs/ke-hoach-bai-6.md mục 10.
-     Máy mẹ (ô "Nhận fill") kêu + đọc giọng; máy phục vụ kêu + rung khi bếp báo hết đĩa.
+     Máy mẹ (ô "Nhận fill") kêu + đọc giọng; máy phục vụ cũng kêu + rung + đọc giọng khi bếp báo hết đĩa (Hieu chốt 19/11).
      Chỉ chứa publishable key (được phép công khai). -->
 <style>
   :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --vang:#f1c40f; --xam:#888; --vien:#e5d5bf; }
@@ -173,16 +173,16 @@ const DA_KEU = {};                                   // id → { lan, luc, muc }
 const DA_NHAC7 = (() => { try { return JSON.parse(luuDoc('quanbay-fill-nhac7') || '{}'); } catch (e) { return {}; } })();
 function keuBao(b) {
   DA_KEU[b.id] = { lan: b.bao_lai_lan, luc: Date.now(), muc: mucHT(b) };
-  if (b.gui_toi === 'me') phat(mucHT(b), cauDoc(b));   // máy mẹ: chuông + đọc
-  else phat(mucHT(b), null);                           // máy phục vụ (đĩa): chuông + rung, không đọc
+  // Máy mẹ và máy phục vụ (đĩa – Hieu chốt 19/11) đều: chuông + rung + đọc. Phục vụ chưa bấm "Bắt đầu nghe" thì chỉ chuông.
+  phat(mucHT(b), S.nghe ? cauDoc(b) : null);
 }
 function demNhac() {
   if (!S.ca) return;
   const bayGio = Date.now();
   for (const b of baoHomNay()) {
     // Máy nhận: báo mới / báo lại / leo thang 5 phút / Hết rồi chưa nhận thì 5 phút đọc lại
-    // (máy mẹ phải bấm "Bắt đầu nghe"; máy phục vụ cần chạm màn hình 1 lần cho chuông kêu được)
-    if (b.trang_thai === 'moi' && mayNhan(b) && (b.gui_toi === 'me' ? S.nghe : !!ac)) {
+    // (máy mẹ phải bấm "Bắt đầu nghe"; máy phục vụ đã chạm màn hình 1 lần thì ít nhất chuông kêu được)
+    if (b.trang_thai === 'moi' && mayNhan(b) && (S.nghe || (b.gui_toi === 'phuc_vu' && !!ac))) {
       const k = DA_KEU[b.id], m = mucHT(b);
       if (!k || k.lan !== b.bao_lai_lan) keuBao(b);
       else if (!b.tat_nhac && m === 'het' && (k.muc === 'sap_het' || bayGio - k.luc >= LEO_THANG)) keuBao(b);
@@ -191,10 +191,10 @@ function demNhac() {
     if (b.trang_thai === 'da_nhan' && b.nhan_luc && !b.tat_nhac && bayGio - Date.parse(b.nhan_luc) >= NHAC_7) {
       const k7 = b.id + '|' + b.nhan_luc;
       if (!DA_NHAC7[k7] && (mayNhan(b) || cuaQuayToi(b))) {
-        const docMe = b.gui_toi === 'me' && mayNhan(b);
-        if (docMe && !S.nghe) continue;               // máy mẹ chưa bấm "Bắt đầu nghe" → chờ, chưa tính là đã nhắc
+        const laMayNhan = mayNhan(b);
+        if (laMayNhan && !S.nghe && !(b.gui_toi === 'phuc_vu' && ac)) continue;   // máy nhận chưa nghe được → chờ, chưa tính là đã nhắc
         DA_NHAC7[k7] = 1; luuGhi('quanbay-fill-nhac7', JSON.stringify(DA_NHAC7));
-        if (docMe) phat('sap_het', chuBao(b) + ', mẹ mang chưa?');
+        if (laMayNhan) phat('sap_het', S.nghe ? chuBao(b) + (b.gui_toi === 'me' ? ', mẹ mang chưa?' : ', mang chưa?') : null);
         else { moAm(); chuong('sap_het'); }
       }
     }
@@ -265,8 +265,10 @@ function ve() {
          ${S.nv.nhan_fill ? '<div class="goi-y">Bạn là người <b>nhận fill</b>: máy này kêu + đọc khi có báo.</div>' : ''}</div>`
     : `<div class="canh">Bạn <b>chưa vào ca</b> nên chưa báo được. <a href="bai6-vao-ca.html?ve=fill-do">→ Vào ca trước</a> (vào xong tự quay lại đây)</div>`;
 
-  if (laNguoiNhanMe() && !S.nghe) {
-    h += `<div class="the"><h2>🔊 Bắt đầu nghe</h2><div class="goi-y">Bấm 1 lần đầu ca. Đặt máy trên giá, cắm sạc, <b>để màn hình sáng, không bấm nút nguồn, không mở app khác</b> – khóa máy thì máy không đọc được.</div>
+  if ((laNguoiNhanMe() || laPhucVu()) && !S.nghe) {
+    h += `<div class="the"><h2>🔊 Bắt đầu nghe</h2><div class="goi-y">${laNguoiNhanMe()
+      ? 'Bấm 1 lần đầu ca. Đặt máy trên giá, cắm sạc, <b>để màn hình sáng, không bấm nút nguồn, không mở app khác</b> – khóa máy thì máy không đọc được.'
+      : 'Bấm 1 lần đầu ca để máy <b>đọc to</b> khi bếp báo hết đĩa. Máy chỉ đọc được khi <b>màn hình đang sáng và đang mở trang này</b>.'}</div>
       ${coGiong && !giongViet ? '<div class="loi">Máy chưa có giọng tiếng Việt – mở trang Thử âm thanh để xem cách tải.</div>' : ''}
       <button class="chinh" id="nghe">▶ Bắt đầu nghe</button></div>`;
   }
@@ -364,7 +366,7 @@ function veDai() {
         : `<button class="nut" data-nhan="${b.id}">Đã nhận</button>`;
       return `<div class="muc-bao"><div class="tieu">${mucHT(b) === 'het' ? '🔴' : '🟡'} ${esc(chuBao(b))}</div>
         <div class="goi-y">${phutTruoc(t0(b))} phút trước${b.bao_lai_lan ? ' · báo lại ' + b.bao_lai_lan + ' lần' : ''}</div>
-        <div class="hang-nut">${goiY}${b.gui_toi === 'me' ? `<button class="nut vien" data-doc="${b.id}">🔊 Nghe lại</button>` : ''}</div>
+        <div class="hang-nut">${goiY}<button class="nut vien" data-doc="${b.id}">🔊 Nghe lại</button></div>
         ${b.gui_toi === 'me' ? `<div class="hang-go"><input id="tl-${b.id}" maxlength="100" placeholder="Hoặc gõ trả lời…"><button class="nut" data-go="${b.id}">Gửi</button></div>` : ''}</div>`;
     }).join('')}${ds.length > 1 ? `<button class="nut vien" id="dongDai" style="width:100%;margin-top:6px">Thu gọn</button>` : ''}</div>`;
   }
@@ -372,7 +374,7 @@ function veDai() {
   daiEl.innerHTML = h; veDai.cu = h;
   ganNut(daiEl);
   const mo = document.getElementById('moDai');
-  if (mo) mo.onclick = () => { S.daiMo = true; moAm(); ds.forEach(b => phat(mucHT(b), b.gui_toi === 'me' ? cauDoc(b) : null)); ve(); };
+  if (mo) mo.onclick = () => { S.daiMo = true; moAm(); ds.forEach(b => phat(mucHT(b), cauDoc(b))); ve(); };
   const dong = document.getElementById('dongDai');
   if (dong) dong.onclick = () => { S.daiMo = false; ve(); };
 }
