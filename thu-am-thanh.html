@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thử âm thanh – Quán Bảy</title>
+<!-- Bài 6.5 bước 1: thử âm thanh trên máy mẹ TRƯỚC khi làm Fill đồ.
+     KHÔNG nối kho Supabase, không gửi gì lên mạng. Tiếng ghi âm chỉ nằm trong máy, tắt trang là mất.
+     Thử: (a) tự phát khi màn hình sáng, (b) khi khóa máy, (c) giọng đọc tiếng Việt, (d) ghi âm ở bếp, (e) nghe ở chỗ rửa rau.
+     Kế hoạch: docs/ke-hoach-bai-6.md mục 10.7. -->
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --vang:#f1c40f; --xam:#888; --vien:#e5d5bf; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); }
+  header { padding:12px 16px; background:var(--chu); color:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header h1 { margin:0; font-size:18px; }
+  .nhan { font-size:11px; background:var(--cam); padding:3px 8px; border-radius:99px; white-space:nowrap; }
+  main { max-width:460px; margin:0 auto; padding:16px; }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:16px; padding:16px; margin-bottom:12px; }
+  h2 { margin:0 0 6px; font-size:19px; }
+  .goi-y { font-size:14px; color:#6b5a45; margin:4px 0 10px; line-height:1.45; }
+  button { font:inherit; border:0; border-radius:12px; cursor:pointer; }
+  button:disabled { opacity:.45; cursor:default; }
+  .chinh { width:100%; padding:18px; font-size:19px; font-weight:800; background:var(--xanh); color:#fff; }
+  .nut { padding:14px; font-weight:800; color:#fff; background:var(--xanh); font-size:16px; }
+  .nut.cam { background:var(--cam); } .nut.do { background:var(--do); } .nut.xam { background:#777; }
+  .nut.vien { background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .hang { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:8px; }
+  .hang2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  select, input[type=text] { width:100%; font-size:17px; padding:12px; border:2px solid var(--vien); border-radius:12px; background:#fff; color:var(--chu); }
+  label { display:block; font-weight:700; margin:10px 0 4px; font-size:15px; }
+  .muc button { padding:12px; font-weight:800; font-size:16px; background:#f3e3cc; color:var(--chu); border:3px solid transparent; }
+  .muc button.chon.vang { background:#fff3c4; border-color:var(--vang); }
+  .muc button.chon.do { background:#fde2df; border-color:var(--do); }
+  .tinh-trang div { padding:6px 0; border-top:1px solid #f1e6d6; font-size:15px; }
+  .tinh-trang div:first-child { border-top:0; }
+  .tot { color:var(--xanh); font-weight:800; } .xau { color:var(--do); font-weight:800; }
+  .dem { text-align:center; font-size:30px; font-weight:800; margin:10px 0 0; min-height:36px; }
+  .ghi { width:100%; padding:26px 14px; font-size:20px; font-weight:800; background:var(--do); color:#fff; user-select:none; -webkit-user-select:none; touch-action:none; }
+  .ghi.dang { background:#7b241c; animation:nhay 1s infinite; }
+  @keyframes nhay { 50% { opacity:.7; } }
+  .dai { margin-top:10px; padding:12px; border-radius:12px; font-weight:800; font-size:17px; display:none; }
+  .dai.vang { background:#fff3c4; border:3px solid var(--vang); display:block; }
+  .dai.do { background:#fde2df; border:3px solid var(--do); display:block; }
+  .kq { display:flex; align-items:center; gap:8px; padding:10px 0; border-top:1px solid #f1e6d6; }
+  .kq:first-of-type { border-top:0; }
+  .kq .ten { flex:1; font-size:15px; }
+  .kq button { padding:10px 12px; font-weight:800; background:#f3e3cc; color:var(--chu); }
+  .kq button.chon-dat { background:var(--xanh); color:#fff; }
+  .kq button.chon-khong { background:var(--do); color:#fff; }
+  #nhatky { font-size:13px; font-family:ui-monospace,Consolas,monospace; max-height:260px; overflow:auto; background:#faf3e8; border-radius:10px; padding:8px; white-space:pre-wrap; word-break:break-word; }
+  textarea { width:100%; min-height:140px; font-size:13px; border:2px solid var(--vien); border-radius:12px; padding:8px; }
+  .loi { margin-top:10px; padding:12px; border-radius:10px; background:#fdecea; color:var(--do); font-weight:700; display:none; }
+  .an { display:none; }
+</style>
+</head>
+<body>
+<header><h1>Quán Bảy – Thử âm thanh</h1><span class="nhan">BÀI 6.5 · BƯỚC 1</span></header>
+<main>
+
+  <div class="the">
+    <h2>0. Bắt đầu</h2>
+    <p class="goi-y">Trang này <b>không gửi gì lên kho</b>. Tiếng ghi âm chỉ nằm trong máy, tắt trang là mất.
+      Trước khi thử: vặn <b>âm lượng phương tiện</b> (nhạc, video) lên to nhất.</p>
+    <button class="chinh" id="batDau">▶ Bắt đầu nghe</button>
+    <div class="tinh-trang" id="tinhTrang" style="margin-top:12px"></div>
+  </div>
+
+  <div class="the an" id="theDoc">
+    <h2>1. Thử giọng đọc</h2>
+    <p class="goi-y">Chọn quầy và món, rồi bấm Đọc. Mẹ nghe xem có <b>rõ và dễ hiểu</b> không.</p>
+    <label for="chonQuay">Quầy báo</label>
+    <select id="chonQuay"></select>
+    <label for="chonDo">Hết đồ gì</label>
+    <select id="chonDo"></select>
+    <label for="oKhac">Hoặc gõ đồ khác (bỏ trống nếu không cần)</label>
+    <input type="text" id="oKhac" placeholder="vd: khăn giấy" maxlength="60">
+    <label>Mức độ</label>
+    <div class="hang2 muc" id="chonMuc">
+      <button data-muc="sap_het" class="chon vang">🟡 Sắp hết</button>
+      <button data-muc="het" class="do">🔴 Hết rồi</button>
+    </div>
+    <label for="chonGiong">Giọng đọc</label>
+    <select id="chonGiong"></select>
+    <label for="chonTocDo">Tốc độ đọc</label>
+    <select id="chonTocDo">
+      <option value="0.8">Chậm</option>
+      <option value="0.95" selected>Vừa</option>
+      <option value="1.1">Nhanh</option>
+    </select>
+    <div class="hang2">
+      <button class="nut" id="docNgay">🔊 Đọc ngay</button>
+      <button class="nut vien" id="docBa">🔊 3 báo liền nhau</button>
+    </div>
+    <div class="dai" id="dai"></div>
+  </div>
+
+  <div class="the an" id="theHen">
+    <h2>2. Máy tự kêu khi không chạm</h2>
+    <p class="goi-y"><b>Lần 1:</b> bấm hẹn rồi để máy trên giá, màn hình sáng, không chạm.<br>
+      <b>Lần 2:</b> bấm hẹn rồi <b>bấm nút nguồn khóa máy</b>, chờ xem có kêu không. Mở lại máy, nhật ký ghi kêu đúng giờ hay trễ.<br>
+      Lúc kêu, máy đọc câu đang chọn ở mục 1.</p>
+    <div class="hang">
+      <button class="nut cam" data-hen="30">30 giây</button>
+      <button class="nut cam" data-hen="60">1 phút</button>
+      <button class="nut cam" data-hen="180">3 phút</button>
+    </div>
+    <div class="dem" id="dem"></div>
+    <button class="nut xam an" id="huyHen" style="width:100%;margin-top:8px">Hủy hẹn</button>
+  </div>
+
+  <div class="the an" id="theGhi">
+    <h2>3. Thử ghi âm</h2>
+    <p class="goi-y">Đứng ở <b>bếp xèo đang đổ bánh</b>, <b>giữ nút</b> và nói như lúc báo mẹ, nói xong thì thả tay. Máy phát lại ngay.
+      Lần đầu máy hỏi quyền dùng micro: bấm <b>Cho phép</b>.</p>
+    <button class="ghi" id="nutGhi">🎙 Giữ để nói</button>
+    <div class="dem" id="demGhi"></div>
+    <audio id="amGhi" controls class="an" style="width:100%;margin-top:8px"></audio>
+    <div class="loi" id="loiGhi"></div>
+  </div>
+
+  <div class="the an" id="theKq">
+    <h2>4. Kết quả</h2>
+    <p class="goi-y">Thử xong mục nào thì bấm Được hoặc Không. Xong hết bấm <b>Chép kết quả</b>, rồi dán gửi Claude.</p>
+    <div id="dsKq"></div>
+    <label for="ghiChu">Ghi chú (mẹ nghe thấy thế nào, chỗ nào khó)</label>
+    <textarea id="ghiChu" placeholder="vd: chỗ rửa rau nghe được nhưng hơi nhỏ"></textarea>
+    <button class="chinh" id="chepKq" style="margin-top:10px">📋 Chép kết quả</button>
+    <textarea id="hopChep" class="an" readonly style="margin-top:8px"></textarea>
+  </div>
+
+  <div class="the an" id="theNk">
+    <h2>Nhật ký</h2>
+    <div id="nhatky"></div>
+  </div>
+</main>
+
+<script>
+// ===== Danh sách đồ (khớp docs/ke-hoach-bai-6.md mục 10.3) =====
+const QUAY = { phuc_vu: 'Phục vụ', xeo: 'Bếp xèo', can: 'Bếp căn', nuoc: 'Quầy nước' };
+const DO = {
+  phuc_vu: ['Nước chấm bánh căn', 'Nước chấm bánh xèo', 'Rau sống', 'Xoài', 'Ớt', 'Hành lá', 'Tóp bánh mì', 'Trứng', 'Xíu mại', 'Da heo', 'Cá kho'],
+  xeo: ['Giá', 'Hành tây', 'Bột', 'Tôm', 'Mực', 'Thịt', 'Đĩa'],
+  can: ['Hành lá', 'Tóp mỡ', 'Bột', 'Trứng', 'Tôm', 'Mực', 'Đĩa'],
+  nuoc: ['Nước mía xay sẵn', 'Rau má', 'Đá'],
+};
+const KQ = [
+  ['a', '(a) Màn hình sáng, không chạm: máy tự kêu và đọc'],
+  ['b', '(b) Khóa máy: máy vẫn kêu và đọc'],
+  ['c', '(c) Giọng tiếng Việt to, rõ, dễ hiểu'],
+  ['d', '(d) Ghi âm ở bếp xèo nghe lại rõ'],
+  ['e', '(e) Mẹ đứng chỗ rửa rau vẫn nghe rõ'],
+];
+
+const $ = (id) => document.getElementById(id);
+const luuDoc = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const luuGhi = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const gioNay = () => new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const nghi = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Trạng thái chung (khai báo trước để các hàm bên dưới dùng được ngay khi trang mở)
+let daBatDau = false, khoaMan = null;
+let dangGhi = false, ghiAm = null, luongMic = null, manh = [], batDauGhi = 0, demGhi = null, urlCu = null;
+
+// ===== Nhật ký =====
+const NK = [];
+function ghiNk(chu) {
+  NK.unshift(gioNay() + '  ' + chu);
+  if (NK.length > 200) NK.pop();
+  $('nhatky').textContent = NK.join('\n');
+}
+document.addEventListener('visibilitychange', () => {
+  ghiNk(document.visibilityState === 'visible' ? 'Mở lại màn hình / quay lại trang' : 'Màn hình tắt hoặc rời trang');
+  if (document.visibilityState === 'visible' && daBatDau) giuMan();
+});
+
+// ===== Chuông (giống Bài 5, 6.3) =====
+let ac = null;
+function moAm() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch (e) {} }
+function chuong(muc) {
+  try { navigator.vibrate && navigator.vibrate(muc === 'het' ? [300, 120, 300, 120, 300] : [200, 100, 200]); } catch (e) {}
+  if (!ac) return 0;
+  const t = ac.currentTime;
+  const beep = (s, f, d) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t + s); g.gain.exponentialRampToValueAtTime(0.6, t + s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + s + d);
+    o.connect(g).connect(ac.destination); o.start(t + s); o.stop(t + s + d + 0.05); };
+  const lan = muc === 'het' ? 3 : 1;   // 🟡 "ting ting" 1 lần, 🔴 3 lần
+  for (let i = 0; i < lan; i++) { beep(i * 0.8, 1318, 0.35); beep(i * 0.8 + 0.25, 1046, 0.5); }
+  return lan * 800 + 200;               // số mili-giây chuông kêu
+}
+
+// ===== Giọng đọc =====
+const coGiong = 'speechSynthesis' in window;
+let giongViet = [];
+function taiGiong() {
+  if (!coGiong) return;
+  const tatCa = speechSynthesis.getVoices();
+  giongViet = tatCa.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('vi'));
+  const sel = $('chonGiong');
+  const cu = luuDoc('thu-am-giong');
+  sel.innerHTML = '';
+  if (!giongViet.length) {
+    const o = document.createElement('option'); o.value = ''; o.textContent = 'Máy chưa có giọng tiếng Việt'; sel.appendChild(o);
+  } else {
+    giongViet.forEach((v, i) => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name + (v.localService ? '' : ' (cần mạng)'); if (v.name === cu) o.selected = true; sel.appendChild(o); });
+  }
+  veTinhTrang();
+}
+if (coGiong) { taiGiong(); speechSynthesis.onvoiceschanged = taiGiong; }
+$('chonGiong').addEventListener('change', (e) => luuGhi('thu-am-giong', e.target.value));
+
+function docCau(cau) {
+  return new Promise((xong) => {
+    if (!coGiong) { ghiNk('Máy không có chức năng đọc chữ'); return xong(false); }
+    const u = new SpeechSynthesisUtterance(cau);
+    u.lang = 'vi-VN'; u.volume = 1; u.rate = parseFloat($('chonTocDo').value) || 0.95; u.pitch = 1;
+    const g = giongViet.find(v => v.name === $('chonGiong').value) || giongViet[0];
+    if (g) u.voice = g;
+    let daBatDauDoc = false, daXong = false;
+    const ket = (ok, ly) => { if (daXong) return; daXong = true; clearTimeout(canh); if (ly) ghiNk(ly); xong(ok); };
+    u.onstart = () => { daBatDauDoc = true; ghiNk('Bắt đầu đọc: "' + cau + '"' + (document.visibilityState !== 'visible' ? ' (lúc màn hình đang tắt)' : '')); };
+    u.onend = () => ket(true);
+    u.onerror = (e) => ket(false, 'Lỗi đọc: ' + (e.error || 'không rõ'));
+    const canh = setTimeout(() => ket(daBatDauDoc, daBatDauDoc ? null : 'KHÔNG đọc được câu (máy im sau 6 giây)'), 6000 + cau.length * 120);
+    try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { ket(false, 'Lỗi đọc: ' + e.message); }
+  });
+}
+
+// ===== Câu báo đang chọn =====
+let mucChon = 'sap_het';
+function cauBao() {
+  const q = $('chonQuay').value;
+  const khac = $('oKhac').value.trim();
+  const ten = (khac || $('chonDo').value).toLowerCase();
+  return { quay: q, ten, muc: mucChon,
+    cau: QUAY[q] + ', ' + (mucChon === 'het' ? 'hết ' : 'sắp hết ') + ten,
+    chu: QUAY[q] + ' cần ' + ten };
+}
+
+// Phát lần lượt (xếp hàng), không chồng tiếng – giống banner nhiều báo
+const hang = []; let dangPhat = false;
+function phat(bao) { hang.push(bao); chayHang(); }
+async function chayHang() {
+  if (dangPhat || dangGhi) return;
+  dangPhat = true;
+  while (hang.length && !dangGhi) {
+    const b = hang.shift();
+    const dai = $('dai'); dai.className = 'dai ' + (b.muc === 'het' ? 'do' : 'vang'); dai.textContent = (b.muc === 'het' ? '🔴 ' : '🟡 ') + b.chu;
+    moAm();
+    await nghi(chuong(b.muc));
+    await docCau(b.cau);
+    await nghi(400);
+  }
+  dangPhat = false;
+}
+
+// ===== 0. Bắt đầu =====
+async function giuMan() {
+  try {
+    if ('wakeLock' in navigator && document.visibilityState === 'visible' && !khoaMan) {
+      khoaMan = await navigator.wakeLock.request('screen');
+      khoaMan.onrelease = () => { khoaMan = null; veTinhTrang(); };
+    }
+  } catch (e) { ghiNk('Không giữ được màn hình sáng: ' + e.message); }
+  veTinhTrang();
+}
+function dong(nhan, ok, chu) { return '<div>' + nhan + ': <span class="' + (ok ? 'tot' : 'xau') + '">' + chu + '</span></div>'; }
+function veTinhTrang() {
+  if (!daBatDau) { $('tinhTrang').innerHTML = ''; return; }
+  const g = giongViet.length;
+  let h = '';
+  h += dong('Giữ màn hình sáng', !!khoaMan, khoaMan ? 'Có' : ('wakeLock' in navigator ? 'Chưa giữ được' : 'Máy không hỗ trợ'));
+  h += dong('Giọng tiếng Việt', g > 0, g > 0 ? g + ' giọng' : 'Chưa có');
+  h += dong('Micro (cần trang https)', window.isSecureContext && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), window.isSecureContext ? 'Dùng được' : 'Chỉ chạy khi trang ở địa chỉ https');
+  if (!g && coGiong) h += '<div class="goi-y" style="border:0">Cách tải giọng Việt: <b>Cài đặt → Quản lý chung (hoặc Hệ thống) → Ngôn ngữ → Chuyển văn bản thành giọng nói → bánh răng của Google → Cài đặt dữ liệu giọng nói → Tiếng Việt</b>. Tải xong mở lại trang này.</div>';
+  if (!coGiong) h += '<div class="goi-y" style="border:0">Trình duyệt này không đọc được chữ. Mở trang bằng <b>Chrome</b>.</div>';
+  $('tinhTrang').innerHTML = h;
+}
+$('batDau').addEventListener('click', async () => {
+  moAm();
+  daBatDau = true;
+  ['theDoc', 'theHen', 'theGhi', 'theKq', 'theNk'].forEach(id => $(id).classList.remove('an'));
+  $('batDau').textContent = '✅ Đang nghe – để trang này mở';
+  ghiNk('Bắt đầu nghe. Máy: ' + navigator.userAgent);
+  await giuMan();
+  taiGiong();
+  phat({ muc: 'sap_het', cau: 'Đã bắt đầu nghe', chu: 'Đã bắt đầu nghe' });
+});
+
+// ===== 1. Chọn câu =====
+function veDo() {
+  const q = $('chonQuay').value;
+  $('chonDo').innerHTML = DO[q].map(d => '<option>' + d + '</option>').join('');
+}
+$('chonQuay').innerHTML = Object.keys(QUAY).map(k => '<option value="' + k + '">' + QUAY[k] + '</option>').join('');
+$('chonQuay').value = 'xeo';
+$('chonQuay').addEventListener('change', veDo);
+veDo();
+$('chonMuc').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  mucChon = b.dataset.muc;
+  $('chonMuc').querySelectorAll('button').forEach(x => x.classList.toggle('chon', x === b));
+});
+$('docNgay').addEventListener('click', () => { const b = cauBao(); ghiNk('Bấm đọc ngay'); phat(b); });
+$('docBa').addEventListener('click', () => {
+  ghiNk('Bấm thử 3 báo liền nhau');
+  phat({ muc: 'het', cau: 'Bếp xèo, hết giá', chu: 'Bếp xèo cần giá' });
+  phat({ muc: 'sap_het', cau: 'Phục vụ, sắp hết nước chấm bánh xèo', chu: 'Phục vụ cần nước chấm bánh xèo' });
+  phat({ muc: 'sap_het', cau: 'Bếp căn, sắp hết hành lá', chu: 'Bếp căn cần hành lá' });
+});
+
+// ===== 2. Hẹn tự kêu =====
+let hen = null;
+document.querySelectorAll('[data-hen]').forEach(b => b.addEventListener('click', () => {
+  const giay = +b.dataset.hen;
+  clearInterval(hen && hen.dem);
+  const luc = Date.now() + giay * 1000;
+  hen = { luc, bao: cauBao() };
+  ghiNk('Hẹn kêu sau ' + giay + ' giây (lúc ' + new Date(luc).toLocaleTimeString('vi-VN') + ')');
+  $('huyHen').classList.remove('an');
+  hen.dem = setInterval(() => {
+    const con = Math.ceil((hen.luc - Date.now()) / 1000);
+    if (con > 0) { $('dem').textContent = 'Kêu sau ' + con + ' giây'; return; }
+    clearInterval(hen.dem);
+    const tre = Math.round((Date.now() - hen.luc) / 1000);
+    ghiNk('Tới giờ kêu' + (tre > 2 ? ' – TRỄ ' + tre + ' giây' : ' – đúng giờ') + (document.visibilityState !== 'visible' ? ' (màn hình đang tắt)' : ' (màn hình sáng)'));
+    $('dem').textContent = tre > 2 ? 'Kêu trễ ' + tre + ' giây' : 'Đã kêu đúng giờ';
+    $('huyHen').classList.add('an');
+    phat(hen.bao);
+    hen = null;
+  }, 500);
+}));
+$('huyHen').addEventListener('click', () => { if (hen) clearInterval(hen.dem); hen = null; $('dem').textContent = ''; $('huyHen').classList.add('an'); ghiNk('Hủy hẹn'); });
+
+// ===== 3. Ghi âm (chỉ trong máy) =====
+function loiGhi(chu) { const el = $('loiGhi'); el.textContent = chu; el.style.display = chu ? 'block' : 'none'; }
+async function batDauNoi(e) {
+  e.preventDefault();
+  if (dangGhi) return;
+  loiGhi('');
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    loiGhi('Micro chỉ chạy khi trang mở bằng địa chỉ https (sau khi đưa trang lên mạng).'); return;
+  }
+  if (!window.MediaRecorder) { loiGhi('Trình duyệt này không ghi âm được. Mở bằng Chrome.'); return; }
+  try {
+    speechSynthesis && speechSynthesis.cancel();
+    luongMic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (err) {
+    ghiNk('Không mở được micro: ' + err.name);
+    loiGhi(err.name === 'NotAllowedError'
+      ? 'Máy đang chặn micro. Bấm biểu tượng ổ khóa cạnh địa chỉ trang → Quyền → Micro → Cho phép, rồi thử lại.'
+      : 'Không mở được micro (' + err.name + '). Có thể app khác (Zalo, gọi điện) đang dùng micro.');
+    return;
+  }
+  const kieu = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(k => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(k)) || '';
+  manh = [];
+  ghiAm = new MediaRecorder(luongMic, kieu ? { mimeType: kieu, audioBitsPerSecond: 32000 } : undefined);
+  ghiAm.ondataavailable = (ev) => { if (ev.data && ev.data.size) manh.push(ev.data); };
+  ghiAm.onstop = xongGhi;
+  ghiAm.start();
+  dangGhi = true; batDauGhi = Date.now();
+  $('nutGhi').classList.add('dang'); $('nutGhi').textContent = '🔴 Đang ghi – thả tay để dừng';
+  demGhi = setInterval(() => {
+    const s = (Date.now() - batDauGhi) / 1000;
+    $('demGhi').textContent = s.toFixed(0) + ' / 15 giây';
+    if (s >= 15) dungNoi();
+  }, 200);
+}
+function dungNoi() {
+  if (!dangGhi) return;
+  dangGhi = false; clearInterval(demGhi);
+  $('nutGhi').classList.remove('dang'); $('nutGhi').textContent = '🎙 Giữ để nói';
+  try { ghiAm.stop(); } catch (e) {}
+}
+function xongGhi() {
+  if (luongMic) luongMic.getTracks().forEach(t => t.stop());
+  const giay = ((Date.now() - batDauGhi) / 1000).toFixed(1);
+  const blob = new Blob(manh, { type: (ghiAm && ghiAm.mimeType) || 'audio/webm' });
+  if (giay < 0.6 || !blob.size) { $('demGhi').textContent = 'Giữ lâu hơn một chút rồi nói'; ghiNk('Ghi quá ngắn, bỏ'); chayHang(); return; }
+  if (urlCu) URL.revokeObjectURL(urlCu);
+  urlCu = URL.createObjectURL(blob);
+  const am = $('amGhi'); am.src = urlCu; am.classList.remove('an');
+  $('demGhi').textContent = 'Đã ghi ' + giay + ' giây · ' + Math.round(blob.size / 1024) + ' KB';
+  ghiNk('Ghi âm ' + giay + ' giây, ' + Math.round(blob.size / 1024) + ' KB (' + (blob.type || 'không rõ kiểu') + ')');
+  moAm();
+  chuong('sap_het');
+  setTimeout(() => am.play().catch(err => ghiNk('Không tự phát được tiếng ghi: ' + err.name)), 1000);
+  chayHang();
+}
+const nutGhi = $('nutGhi');
+nutGhi.addEventListener('pointerdown', batDauNoi);
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => nutGhi.addEventListener(ev, dungNoi));
+nutGhi.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ===== 4. Kết quả =====
+const kq = (() => { try { return JSON.parse(luuDoc('thu-am-kq') || '{}'); } catch (e) { return {}; } })();
+$('ghiChu').value = luuDoc('thu-am-ghichu') || '';
+$('ghiChu').addEventListener('input', (e) => luuGhi('thu-am-ghichu', e.target.value));
+function veKq() {
+  $('dsKq').innerHTML = KQ.map(([k, ten]) =>
+    '<div class="kq"><span class="ten">' + ten + '</span>' +
+    '<button data-k="' + k + '" data-v="dat" class="' + (kq[k] === 'dat' ? 'chon-dat' : '') + '">Được</button>' +
+    '<button data-k="' + k + '" data-v="khong" class="' + (kq[k] === 'khong' ? 'chon-khong' : '') + '">Không</button></div>').join('');
+}
+$('dsKq').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  kq[b.dataset.k] = kq[b.dataset.k] === b.dataset.v ? undefined : b.dataset.v;
+  luuGhi('thu-am-kq', JSON.stringify(kq)); veKq();
+});
+veKq();
+$('chepKq').addEventListener('click', async () => {
+  const chu = ['KẾT QUẢ THỬ ÂM THANH – ' + new Date().toLocaleString('vi-VN'),
+    ...KQ.map(([k, ten]) => ten + ': ' + (kq[k] === 'dat' ? 'ĐƯỢC' : kq[k] === 'khong' ? 'KHÔNG' : 'chưa thử')),
+    'Giữ màn hình sáng: ' + (khoaMan ? 'có' : 'không'),
+    'Giọng tiếng Việt: ' + (giongViet.map(v => v.name).join(', ') || 'chưa có'),
+    'Ghi chú: ' + ($('ghiChu').value.trim() || '(không)'),
+    'Máy: ' + navigator.userAgent,
+    '--- Nhật ký ---', ...NK.slice(0, 60)].join('\n');
+  try { await navigator.clipboard.writeText(chu); $('chepKq').textContent = '✅ Đã chép – dán gửi Claude'; }
+  catch (e) { const h = $('hopChep'); h.value = chu; h.classList.remove('an'); h.select(); $('chepKq').textContent = 'Giữ vào ô dưới → Chọn tất cả → Sao chép'; }
+});
+</script>
+</body>
+</html>
