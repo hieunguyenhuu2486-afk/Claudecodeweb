@@ -111,6 +111,7 @@
   .dong-hop { background:#ddd; color:var(--chu); padding:8px 12px; }
   .chip { padding:10px 12px; font-size:15px; font-weight:700; background:#fff; border:2px solid var(--vien); color:var(--chu); }
   .chip.ca { border-color:var(--cam); color:#a35200; }
+  .chip.chon { background:var(--chu); color:#fff; border-color:var(--chu); }
   .chips { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
   .xem-truoc { width:100%; font-size:14px; }
   .o-chu { width:100%; font-size:16px; padding:12px; border:2px solid var(--vien); border-radius:10px; }
@@ -169,10 +170,16 @@
 <script>
 // ===== Menu (tên + giá theo docs/menu-gia.md) =====
 // Bánh xèo: chỉ 1 món "Bánh xèo", loại (thập cẩm / tôm / mực / thịt / kết hợp) ghi kèm → bếp thấy "Bánh xèo tôm".
+// Combo bánh căn = 1 đĩa bánh (bếp căn làm) + 1 tô chấm đầy đủ (PHỤC VỤ mang, đã gồm trong giá combo).
+// Bếp chỉ thấy "Căn truyền thống" (ten_bep). Đĩa lẻ = chỉ có bánh.
+// Tô chấm đầy đủ = 1 da heo + 1 xíu mại + 1 trứng: lẻ 17.000 → đủ bộ 16.000. Không đủ bộ thì tính theo giá từng món (gomDon).
 const MON = {
   xeo:      { ten: 'Bánh xèo',                 tram: 'xeo',  gia: 40000 },
-  can_tt:   { ten: 'Căn truyền thống (combo)', tram: 'can',  gia: 37000 },
-  can_trung:{ ten: 'Căn trứng (combo)',        tram: 'can',  gia: 42000 },
+  xeo_chay: { ten: 'Bánh xèo chay',            tram: 'xeo',  gia: 33000, tam: true, mo_ta: '3 cái (11.000đ/cái) · hành, giá, bột' },
+  can_tt:   { ten: 'Combo căn truyền thống',   ten_bep: 'Căn truyền thống', tram: 'can', gia: 37000, goc: 39000, kem_to: true },
+  can_trung:{ ten: 'Combo căn trứng',          ten_bep: 'Căn trứng',        tram: 'can', gia: 42000, goc: 43000, kem_to: true },
+  can_tt_le:   { ten: 'Đĩa căn truyền thống',  ten_bep: 'Căn truyền thống', tram: 'can', gia: 22000, mo_ta: 'chỉ có bánh' },
+  can_trung_le:{ ten: 'Đĩa căn trứng',         ten_bep: 'Căn trứng',        tram: 'can', gia: 26000, mo_ta: 'chỉ có bánh' },
   can_tmt:  { ten: 'Căn tôm, mực, trứng',      tram: 'can',  gia: 32000 },
   can_tm:   { ten: 'Căn tôm mực',              tram: 'can',  gia: 37000 },
   can_tom:  { ten: 'Căn tôm',                  tram: 'can',  gia: 37000 },
@@ -181,14 +188,34 @@ const MON = {
   mia:      { ten: 'Nước mía',                 tram: 'nuoc', gia: 10000 },
   rau:      { ten: 'Rau má',                   tram: 'nuoc', gia: 10000 },
   ngot:     { ten: 'Nước ngọt',                tram: 'nuoc', gia: 12000, tam: true },
-  cakho:    { ten: 'Cá kho',                   tram: 'ca',   gia: 17000 },
+  cakho:    { ten: 'Cá kho',                   tram: 'ca',   gia: 17000, icon: '🐟', viec: 'múc', donvi: 'con' },
+  to_cham:  { ten: 'Tô chấm đầy đủ',           tram: 'ca',   gia: 16000, goc: 17000, icon: '🥣', viec: 'mang', donvi: 'tô', mo_ta: '1 da heo + 1 xíu mại + 1 trứng' },
+  da_heo:   { ten: 'Da heo',                   tram: 'ca',   gia: 3000,  icon: '🥓', viec: 'mang', donvi: 'miếng' },
+  xiu_mai:  { ten: 'Xíu mại',                  tram: 'ca',   gia: 8000,  icon: '🍡', viec: 'mang', donvi: 'viên' },
+  trung:    { ten: 'Trứng',                    tram: 'ca',   gia: 6000,  icon: '🥚', viec: 'mang', donvi: 'cái' },
 };
 const TRAM = {
   xeo:  { ten: 'Xèo',    day: 'Bếp xèo',     icon: '🔥', donvi: 'phần' },
   can:  { ten: 'Căn',    day: 'Bếp căn',     icon: '🥘', donvi: 'phần' },
   nuoc: { ten: 'Nước',   day: 'Quầy nước',   icon: '🥤', donvi: 'ly' },
-  ca:   { ten: 'Cá kho', day: 'Phục vụ múc', icon: '🐟', donvi: 'con' },   // không qua bếp: phục vụ múc mang lên
+  ca:   { ten: 'Cá kho', day: 'Phục vụ mang', icon: '🙋', donvi: 'con' },   // không qua bếp: phục vụ múc cá kho, mang tô chấm + topping
 };
+const TOPPING = ['to_cham', 'da_heo', 'xiu_mai', 'trung'];
+// Tính giá trong MỘT lần gọi (Hieu chốt 19/11):
+//  1) Đủ 1 da heo + 1 xíu mại + 1 trứng → thành 1 tô đầy đủ 16.000. Phần dư tính theo giá từng món.
+//  2) Đĩa căn + tô đầy đủ → thành combo (truyền thống 37.000, trứng 42.000), khỏi phụ thuộc nhân viên bấm nút nào.
+//  Gọi rời ở lần sau thì KHÔNG gộp với lần trước: không có giá tô 16.000, không có giá combo. Chỉ gọi hàm này cho số món đang chọn.
+function gomDon(sl) {
+  const r = { ...sl }, g = (k) => r[k] || 0;
+  const bo = Math.min(g('da_heo'), g('xiu_mai'), g('trung'));
+  if (bo) { r.da_heo -= bo; r.xiu_mai -= bo; r.trung -= bo; r.to_cham = g('to_cham') + bo; }
+  [['can_tt_le', 'can_tt'], ['can_trung_le', 'can_trung']].forEach(([dia, combo]) => {
+    const c = Math.min(g(dia), g('to_cham'));
+    if (c) { r[dia] -= c; r.to_cham -= c; r[combo] = g(combo) + c; }
+  });
+  return r;
+}
+const iconMon = (d) => MON[d.mon].icon || TRAM[MON[d.mon].tram].icon;
 const BEP = ['xeo', 'can', 'nuoc'];
 const LOAI_XEO = ['thập cẩm', 'tôm', 'mực', 'thịt'];
 // 14 bàn đánh số + 5 bàn phụ KHÔNG đánh số (mở khi đông, ghi tên lúc mở: "bàn ngoài cửa"…)
@@ -203,7 +230,7 @@ let maSo = 0;
 const moiId = () => ++maSo;
 const truoc = (phut) => Date.now() - phut * 60000;
 function dong(mon, sl, tt, o = {}) {
-  return { id: moiId(), mon, sl, tt, loai: o.loai || '', ghichu: o.gc || '', uu_tien: !!o.ut,
+  return { id: moiId(), mon, sl, tt, loai: o.loai || '', ghichu: o.gc || '', uu_tien: !!o.ut, kem: !!o.kem,
            xong_luc: o.xong != null ? truoc(o.xong) : null,
            len_luc: tt === 'len' ? truoc(o.len || 1) : null };
 }
@@ -218,9 +245,10 @@ function taoMau() {
       luot(32, 'đơn mới',  [dong('xeo', 2, 'len', { loai: 'thập cẩm', xong: 20, len: 19 }), dong('can_trung', 1, 'len', { xong: 24, len: 23 }), dong('mia', 2, 'len', { xong: 28, len: 27 }), dong('cakho', 2, 'len', { len: 30 })]),
       luot(4,  'gọi thêm', [dong('xeo', 2, 'moi', { loai: 'tôm' })]) ]),
     ban('10', true, [], [
-      luot(26, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'thập cẩm', xong: 12, len: 11 }), dong('can_tt', 2, 'len', { xong: 18, len: 17 }), dong('rau', 3, 'len', { xong: 22, len: 21 })]) ]),
+      luot(26, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'thập cẩm', xong: 12, len: 11 }), dong('can_tt', 2, 'len', { xong: 18, len: 17 }), dong('to_cham', 2, 'len', { kem: true, len: 25 }), dong('rau', 3, 'len', { xong: 22, len: 21 })]) ]),
     ban('7', true, [], [
-      luot(22, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'mực', xong: 10, len: 9 }), dong('can_tt', 2, 'len', { xong: 15, len: 14 }), dong('mia', 3, 'len', { xong: 19, len: 18 })]),
+      luot(22, 'đơn mới',  [dong('xeo', 3, 'len', { loai: 'mực', xong: 10, len: 9 }), dong('can_tt', 2, 'len', { xong: 15, len: 14 }), dong('to_cham', 2, 'len', { kem: true, len: 21 }), dong('mia', 3, 'len', { xong: 19, len: 18 })]),
+      luot(12, 'gọi thêm', [dong('can_tt_le', 1, 'len', { xong: 5, len: 4 }), dong('trung', 2, 'moi')]),
       luot(9,  'gọi thêm', [dong('xeo', 1, 'xong', { loai: 'tôm thịt', xong: 1 })]) ]),
     ban('3', true, [], [
       luot(15, 'đơn mới',  [dong('xeo', 4, 'moi', { loai: 'thập cẩm' }), dong('can_tm', 2, 'xong', { xong: 2 }), dong('rau', 4, 'moi', { gc: '2 ly ít ngọt' })]) ]),
@@ -231,7 +259,7 @@ function taoMau() {
     ban('5', false, [canMang('Rau sống', 'đang rửa, mang sau', 2)], [
       luot(6,  'đơn mới',  [dong('can_hs', 1, 'moi'), dong('xeo', 2, 'moi', { loai: 'tôm' }), dong('ngot', 1, 'moi')], 'phục vụ nhập hộ') ]),
     ban('12', false, [], [
-      luot(1,  'đơn mới',  [dong('rau', 2, 'moi', { gc: 'ít đá' }), dong('xeo', 1, 'moi', { loai: 'thập cẩm' })]) ]),
+      luot(1,  'đơn mới',  [dong('rau', 2, 'moi', { gc: 'ít đá' }), dong('xeo', 1, 'moi', { loai: 'thập cẩm' }), dong('can_trung', 1, 'moi'), dong('to_cham', 1, 'moi', { kem: true })]) ]),
   ];
 }
 let BAN = taoMau();
@@ -249,7 +277,9 @@ const hoaDau = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const timBan = (so) => BAN.find(b => b.so === so);
 const laPhu = (so) => String(so || '').startsWith('P');
 const tenBan = (b) => b.ten ? b.ten : 'Bàn ' + b.so;
-const tenMon = (d) => d.mon === 'xeo' && d.loai ? 'Bánh xèo ' + d.loai : MON[d.mon].ten;
+const tenMon = (d) => d.mon === 'xeo' && d.loai ? 'Bánh xèo ' + d.loai : MON[d.mon].ten + (d.kem ? ' (kèm combo)' : '');
+const tienDong = (d) => d.kem ? 0 : d.sl * MON[d.mon].gia;   // tô chấm kèm combo đã gồm trong giá combo
+const tenBep = (d) => d.mon === 'xeo' && d.loai ? 'Bánh xèo ' + d.loai : (MON[d.mon].ten_bep || MON[d.mon].ten);   // bếp chỉ thấy bánh
 const tenKey = (k) => k.startsWith('xeo|') ? 'Bánh xèo ' + k.slice(4) : MON[k].ten;
 const giaKey = (k) => MON[k.split('|')[0]].gia;
 function tatCaDong() {
@@ -270,7 +300,7 @@ const choLauNhat = (b) => Math.min(...b.luot.filter(l => l.ds.some(dangLam)).map
 // Bàn vào lâu nhưng mới gọi thêm thì tính theo giờ gọi thêm.
 const hangCho = () => BAN.filter(b => choBep(b) > 0).sort((a, b) => choLauNhat(a) - choLauNhat(b)).map(b => b.so);
 const choMangDs = () => tatCaDong().filter(x => x.d.tt === 'xong' || (x.tram === 'ca' && x.d.tt === 'moi'));
-const ttChu = (x) => x.tram === 'ca' && x.d.tt === 'moi' ? 'Chờ múc' : { moi: 'Đang làm', xong: 'Xong – chờ mang', len: 'Đã lên' }[x.d.tt];
+const ttChu = (x) => x.tram === 'ca' && x.d.tt === 'moi' ? 'Chờ ' + MON[x.d.mon].viec : { moi: 'Đang làm', xong: 'Xong – chờ mang', len: 'Đã lên' }[x.d.tt];
 
 // ===== Chuông + rung =====
 // Máy thật: máy PHỤC VỤ kêu khi bếp bấm Xong / có cá kho cần múc; máy BẾP (xèo, căn, nước) kêu khi có đơn mới / hoàn tác.
@@ -303,14 +333,15 @@ function baoXong(x) {
 }
 function baoDonMoi(b, ds, nhan) {
   const bep = [...new Set(ds.map(d => MON[d.mon].tram).filter(t => t !== 'ca'))];
-  const coCa = ds.some(d => d.mon === 'cakho');
+  const pv = ds.filter(d => MON[d.mon].tram === 'ca');   // cá kho, tô chấm, topping: việc của phục vụ
+  const pvChu = pv.map(d => `${iconMon(d)} ${d.sl} ${tenMon(d).toLowerCase()} chờ ${MON[d.mon].viec}`).join(', ');
   if (bep.length) {
     chuong('bep');
-    bao(`🔔 Máy ${bep.map(t => TRAM[t].day).join(', ')}: chuông + rung – ${nhan} ${tenBan(b)}${coCa ? ' · 🐟 cá kho chờ múc' : ''}`, 4000);
+    bao(`🔔 Máy ${bep.map(t => TRAM[t].day).join(', ')}: chuông + rung – ${nhan} ${tenBan(b)}${pv.length ? ' · ' + pvChu : ''}`, 4000);
   }
-  if (coCa) {
+  if (pv.length) {
     setTimeout(() => chuong('phucvu'), bep.length ? 1300 : 0);
-    if (!bep.length) bao(`🔔 Máy phục vụ (Chờ mang): ${tenBan(b)} – cá kho chờ múc`, 4000);
+    if (!bep.length) bao(`🔔 Máy phục vụ (Chờ mang): ${tenBan(b)} – ${pvChu}`, 4000);
   }
 }
 
@@ -322,10 +353,16 @@ function veThanh() {
     const so = dang.reduce((s, x) => s + x.d.sl, 0);
     const cuNhat = dang.length ? Math.min(...dang.map(x => x.l.gio)) : null;
     const ca = t === 'ca';
-    return `<button class="quay-o ${ca ? 'nho' : ''}" data-act="${ca ? 'tab' : 'xemquay'}" data-v="${ca ? 'mang' : t}">
+    if (ca) {   // ô nhỏ: số con cá kho chưa múc (+ số tô chấm, topping chưa mang nếu có)
+      const dem = (f) => dang.filter(x => f(x.d.mon)).reduce((s, x) => s + x.d.sl, 0);
+      const soCa = dem(m => m === 'cakho'), soTo = dem(m => m === 'to_cham'), soLe = dem(m => TOPPING.includes(m) && m !== 'to_cham');
+      return `<button class="quay-o nho" data-act="tab" data-v="mang"><b>🐟 Cá kho</b>
+        <span class="so">${soCa}</span> con<div class="lau">${soCa ? 'chưa múc' : 'trống'}${soTo ? ` · 🥣 ${soTo} tô` : ''}${soLe ? ` · ${soLe} topping` : ''}</div></button>`;
+    }
+    return `<button class="quay-o" data-act="xemquay" data-v="${t}">
       <b>${TRAM[t].icon} ${TRAM[t].ten}</b>
       <span class="so">${so}</span> ${TRAM[t].donvi}
-      <div class="lau">${cuNhat ? (ca ? 'chưa múc' : 'lâu nhất ' + phut(cuNhat)) : 'trống'}</div></button>`;
+      <div class="lau">${cuNhat ? 'lâu nhất ' + phut(cuNhat) : 'trống'}</div></button>`;
   }).join('');
 }
 
@@ -374,7 +411,7 @@ function veKetQua() {
     mang.map(({ b, c }) => `<div class="the"><div class="dong" style="border:0"><div class="ten"><b>${esc(tenBan(b))}</b> · 📋 Cần mang: <b>${esc(c.ten)}</b>${c.chi_tiet ? ' – ' + esc(c.chi_tiet) : ''}<br><small>ghi ${phut(c.luc)} trước</small></div>
       <button class="nut vien" data-act="moban" data-v="${b.so}">Mở bàn</button></div></div>`).join('') +
     mon.map(x => `<div class="the"><div class="dong" style="border:0"><div class="ten"><b>${esc(tenBan(x.b))}</b> · ${gioVN(x.l.gio)} ${x.l.nhan}<br>
-      ${TRAM[x.tram].icon} <b>${x.d.sl}</b> ${esc(tenMon(x.d))} <span class="tt ${x.d.tt}">${ttChu(x)}${x.d.tt === 'moi' ? ' ' + phut(x.l.gio) : ''}</span>
+      ${iconMon(x.d)} <b>${x.d.sl}</b> ${esc(tenMon(x.d))} <span class="tt ${x.d.tt}">${ttChu(x)}${x.d.tt === 'moi' ? ' ' + phut(x.l.gio) : ''}</span>
       ${x.d.ghichu ? `<br><span class="gc">📝 ${esc(x.d.ghichu)}</span>` : ''}</div>
       <button class="nut vien" data-act="moban" data-v="${x.b.so}">Mở bàn</button></div></div>`).join('');
 }
@@ -384,8 +421,8 @@ function veThe(b) {
   const luotCuoi = b.luot[b.luot.length - 1];
   const coDoAn = ds.some(d => laMonAn(MON[d.mon].tram));
   const chuaCoDoAn = coDoAn && !ds.some(d => laMonAn(MON[d.mon].tram) && d.tt === 'len');
-  const choMang = ds.filter(d => d.tt === 'xong' || (d.mon === 'cakho' && d.tt === 'moi')).length;
-  const tong = ds.reduce((s, d) => s + d.sl * MON[d.mon].gia, 0);
+  const choMang = ds.filter(d => d.tt === 'xong' || (MON[d.mon].tram === 'ca' && d.tt === 'moi')).length;
+  const tong = ds.reduce((s, d) => s + tienDong(d), 0);
   const cho = choBep(b);
   const thuTu = sapXep === 'cho' && cho ? hangCho().indexOf(b.so) + 1 : 0;
   const tiendo = Object.keys(TRAM).map(t => {
@@ -430,9 +467,9 @@ function veChiTiet(b) {
     <button class="nut vien dai" data-act="moghichu" data-v="${b.so}">+ Ghi thiếu đồ / khách xin thêm</button>`;
   // 2) Món: từng lượt gọi
   const luotHtml = b.luot.map(l => `<div class="luot">${gioVN(l.gio)} · ${l.nhan}${l.nguon === 'phục vụ nhập hộ' ? ' · phục vụ nhập hộ' : ''}</div>` + l.ds.map(veDong).join('')).join('');
-  // 3) Tạm tính (gộp theo món, cá kho tính như món thường)
+  // 3) Tạm tính (gộp theo món; cá kho, tô chấm gọi thêm tính như món thường; tô kèm combo không tính riêng)
   const hd = {};
-  b.luot.forEach(l => l.ds.forEach(d => { const k = tenMon(d); (hd[k] = hd[k] || { sl: 0, gia: MON[d.mon].gia, tam: MON[d.mon].tam }).sl += d.sl; }));
+  b.luot.forEach(l => l.ds.filter(d => !d.kem).forEach(d => { const k = tenMon(d); (hd[k] = hd[k] || { sl: 0, gia: MON[d.mon].gia, tam: MON[d.mon].tam }).sl += d.sl; }));
   const tongTien = Object.values(hd).reduce((s, x) => s + x.sl * x.gia, 0);
   const bill = `<div class="muc">Tạm tính</div>` + Object.entries(hd).map(([k, x]) =>
     `<div class="dong-tien"><span>${x.sl} × ${esc(k)}${x.tam ? ' <small>(giá tạm)</small>' : ''}</span><span>${tien(x.sl * x.gia)}</span></div>`).join('') +
@@ -446,11 +483,11 @@ function veChiTiet(b) {
 function veDong(d) {
   const m = MON[d.mon];
   let tt, nut;
-  if (m.tram === 'ca' && d.tt === 'moi') { tt = `<span class="tt muc">Chờ múc</span>`; nut = `<button class="nut len" data-act="len" data-v="${d.id}">Đã lên</button>`; }
+  if (m.tram === 'ca' && d.tt === 'moi') { tt = `<span class="tt muc">Chờ ${m.viec}</span>`; nut = `<button class="nut len" data-act="len" data-v="${d.id}">Đã lên</button>`; }
   else if (d.tt === 'moi') { tt = `<span class="tt moi">Đang làm</span>`; nut = `<button class="nut" data-act="xong" data-v="${d.id}">Xong</button>`; }
   else if (d.tt === 'xong') { tt = `<span class="tt xong">Xong ${phut(d.xong_luc)} trước</span>`; nut = `<button class="nut len" data-act="len" data-v="${d.id}">Đã lên</button><button class="nut ht" data-act="ht" data-v="${d.id}">↩</button>`; }
   else { tt = `<span class="tt len">Đã lên</span>`; nut = `<button class="nut ht" data-act="ht" data-v="${d.id}">↩ Hoàn tác</button>`; }
-  return `<div class="dong"><div class="ten">${d.uu_tien && d.tt === 'moi' ? '<span class="nhan-ut">ƯU TIÊN</span><br>' : ''}${TRAM[m.tram].icon} <b>${d.sl}</b> ${esc(tenMon(d))}
+  return `<div class="dong"><div class="ten">${d.uu_tien && d.tt === 'moi' ? '<span class="nhan-ut">ƯU TIÊN</span><br>' : ''}${iconMon(d)} <b>${d.sl}</b> ${esc(tenMon(d))}
     ${d.ghichu ? `<br><span class="gc">📝 ${esc(d.ghichu)}</span>` : ''}</div>${tt}${nut}</div>`;
 }
 
@@ -459,11 +496,11 @@ function veChoMang() {
   const giaLap = `<button class="hotro" data-act="giaxong">🧪 Giả lập: bếp bấm Xong 1 món → nghe chuông</button>`;
   const ds = choMangDs().map(x => ({ ...x, san: x.tram === 'ca' ? x.l.gio : x.d.xong_luc })).sort((a, b) => a.san - b.san);
   if (!ds.length) return giaLap + `<div class="trong">Không có món nào chờ mang 👍</div>`;
-  return giaLap + `<div class="tieu"><span>Món bếp đã xong + 🐟 cá kho cần múc, <b>chưa lên bàn</b> (sẵn trước ở trên)</span></div>` + ds.map(x => `
-    <div class="the"><div class="dau"><span class="ban ${x.b.ten ? 'phu' : ''}">${esc(tenBan(x.b))}</span><span class="phut">${x.tram === 'ca' ? 'gọi ' + phut(x.san) + ' trước · cần múc' : 'xong ' + phut(x.san) + ' trước'}</span></div>
-      <div class="dong" style="border:0"><div class="ten">${TRAM[x.tram].icon} <b>${x.d.sl}</b> ${esc(tenMon(x.d))}
+  return giaLap + `<div class="tieu"><span>Món bếp đã xong + 🐟 cá kho cần múc + 🥣 tô chấm, topping cần mang, <b>chưa lên bàn</b> (sẵn trước ở trên)</span></div>` + ds.map(x => `
+    <div class="the"><div class="dau"><span class="ban ${x.b.ten ? 'phu' : ''}">${esc(tenBan(x.b))}</span><span class="phut">${x.tram === 'ca' ? 'gọi ' + phut(x.san) + ' trước · cần ' + MON[x.d.mon].viec : 'xong ' + phut(x.san) + ' trước'}</span></div>
+      <div class="dong" style="border:0"><div class="ten">${iconMon(x.d)} <b>${x.d.sl}</b> ${esc(tenMon(x.d))}
         ${x.d.ghichu ? `<br><span class="gc">📝 ${esc(x.d.ghichu)}</span>` : ''}</div>
-        <button class="nut len" data-act="len" data-v="${x.d.id}">${x.tram === 'ca' ? 'Đã múc lên' : 'Đã lên bàn'}</button>
+        <button class="nut len" data-act="len" data-v="${x.d.id}">${x.tram === 'ca' ? 'Đã ' + MON[x.d.mon].viec + ' lên' : 'Đã lên bàn'}</button>
         ${x.tram === 'ca' ? '' : `<button class="nut ht" data-act="ht" data-v="${x.d.id}">↩</button>`}</div></div>`).join('');
 }
 
@@ -485,14 +522,14 @@ function veQuay() {
         ${n.ds.some(d => d.uu_tien) ? '<span class="nhan-ut">↩ LÀM LẠI – ƯU TIÊN</span>' : ''}
         <div class="dau"><span class="ban ${n.b.ten ? 'phu' : ''}">${esc(tenBan(n.b))}</span><span class="nhan ${n.l.nhan === 'đơn mới' ? 'moi' : 'them'}">${n.l.nhan}</span>
           <span class="phut">gọi ${gioVN(n.l.gio)} · chờ ${phut(n.l.gio)}</span></div>
-        ${n.ds.map(d => `<div class="dong" style="border:0"><div class="ten"><b>${d.sl}</b> ${esc(tenMon(d))}${d.ghichu ? `<br><span class="gc">📝 ${esc(d.ghichu)}</span>` : ''}</div></div>`).join('')}
+        ${n.ds.map(d => `<div class="dong" style="border:0"><div class="ten"><b>${d.sl}</b> ${esc(tenBep(d))}${d.ghichu ? `<br><span class="gc">📝 ${esc(d.ghichu)}</span>` : ''}</div></div>`).join('')}
         <div class="duoi"><span></span><button class="nut" data-act="xongnhom" data-v="${n.b.so}" data-li="${n.li}">Xong (bấm thay bếp)</button></div>
       </div>`).join('') : `<div class="trong">${TRAM[quay].day} đang trống</div>`;
   } else {
     const sx = ls.sort((a, b) => b.d.xong_luc - a.d.xong_luc);
     than = sx.length ? sx.map(x => `
       <div class="the"><div class="dau"><span class="ban ${x.b.ten ? 'phu' : ''}">${esc(tenBan(x.b))}</span><span class="phut">xong lúc ${gioVN(x.d.xong_luc)}${x.d.tt === 'len' ? ' · đã lên' : ''}</span></div>
-        <div class="dong" style="border:0"><div class="ten"><b>${x.d.sl}</b> ${esc(tenMon(x.d))}</div>
+        <div class="dong" style="border:0"><div class="ten"><b>${x.d.sl}</b> ${esc(tenBep(x.d))}</div>
         <button class="nut ht" data-act="ht" data-v="${x.d.id}">Hoàn tác</button></div></div>`).join('') : `<div class="trong">Chưa có món nào xong</div>`;
   }
   return seg + hotro + seg2 + than;
@@ -528,13 +565,16 @@ function veNhomXeo() {
   return `<div class="nhom">🔥 Bếp xèo · Bánh xèo ${tien(MON.xeo.gia)}/phần</div>
     <div class="goc" style="margin:2px 0">Chạm loại để thêm 1 phần:</div>
     <div class="chips">${LOAI_XEO.map(L => `<button class="chip" data-act="themloai" data-v="${L}">+ ${hoaDau(L)}</button>`).join('')}</div>
-    <div class="hang-go"><input class="o-chu" data-inp="loaixeo" maxlength="40" placeholder="Hoặc gõ kết hợp: tôm thịt…" value="${esc(hop.chuXeo || '')}"><button class="nut" data-act="themloaigo">Thêm</button></div>
+    <div class="hang-go"><input class="o-chu" data-inp="loaixeo" maxlength="40" placeholder="Hoặc gõ: tôm thịt, chay…" value="${esc(hop.chuXeo || '')}"><button class="nut" data-act="themloaigo">Thêm</button></div>
     <div class="chips" id="goiy-xeo"></div>` +
-    keys.map(k => dongMonHop(k)).join('') +
-    (keys.length ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-xeo" maxlength="80" placeholder="Ghi chú cho bếp xèo (vd: giòn kỹ)" value="${esc(hop.gc.xeo || '')}">` : '');
+    keys.map(k => dongMonHop(k)).join('') + dongMonHop('xeo_chay') +
+    (keys.length || hop.sl.xeo_chay > 0 ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-xeo" maxlength="80" placeholder="Ghi chú cho bếp xèo (vd: giòn kỹ)" value="${esc(hop.gc.xeo || '')}">` : '');
 }
-const dongMonHop = (k) => `<div class="dong-mon"><div class="ten">${esc(tenKey(k))}<br><small>${tien(giaKey(k))}${MON[k.split('|')[0]].tam ? ' (giá tạm)' : ''}</small></div>
-  <button data-act="hopsl" data-v="${esc(k)}" data-d="-1">−</button><span class="sl">${hop.sl[k] || 0}</span><button data-act="hopsl" data-v="${esc(k)}" data-d="1">+</button></div>`;
+// Tô chấm + topping có −/+ : dùng chung cho "Gọi món" và "Ghi thiếu đồ / khách xin thêm"
+const veTopping = () => TOPPING.map(dongMonHop).join('');
+const dongMonHop = (k) => { const m = MON[k.split('|')[0]];
+  return `<div class="dong-mon"><div class="ten">${m.icon ? m.icon + ' ' : ''}${esc(tenKey(k))}<br><small>${tien(giaKey(k))}${m.donvi ? '/' + m.donvi : ''}${m.goc ? ' (giá gốc ' + tien(m.goc) + ')' : ''}${m.tam ? ' (giá tạm)' : ''}${m.kem_to ? ' · đĩa bánh + 1 tô chấm đầy đủ (phục vụ mang)' : m.mo_ta ? ' · ' + m.mo_ta : ''}</small></div>
+  <button data-act="hopsl" data-v="${esc(k)}" data-d="-1">−</button><span class="sl">${hop.sl[k] || 0}</span><button data-act="hopsl" data-v="${esc(k)}" data-d="1">+</button></div>`; };
 function veHop() {
   const k = document.querySelector('#hop .khung');
   const dauHop = (tieuDe) => `<div class="hop-dau"><h2>${tieuDe}</h2><button class="dong-hop" data-act="donghop">✕ Đóng</button></div>`;
@@ -543,10 +583,11 @@ function veHop() {
     k.innerHTML = dauHop(`${esc(tenBan(b))} – thiếu đồ / khách xin thêm`) + `
       <div>Chạm 1 lần là ghi ngay:</div>
       <div class="chips">${GOI_Y.map(g => `<button class="chip" data-act="themnhanh" data-v="${esc(g)}">${esc(g)}</button>`).join('')}</div>
-      <div style="margin-top:6px">Khách xin thêm món <b>có tính tiền</b>:</div>
-      <div class="dong-mon"><div class="ten">🐟 Cá kho<br><small>${tien(MON.cakho.gia)}/con · cộng vào hóa đơn</small></div>
-        <button data-act="soca" data-d="-1">−</button><span class="sl">${hop.soCa}</span><button data-act="soca" data-d="1">+</button></div>
-      <button class="nut dai" style="background:var(--cam)" data-act="themcakho">Thêm ${hop.soCa} cá kho vào hóa đơn · ${tien(hop.soCa * MON.cakho.gia)}</button>
+      <div style="margin-top:6px">Khách xin thêm món <b>có tính tiền</b> (phục vụ mang):</div>
+      ${dongMonHop('cakho')}
+      ${veTopping()}
+      ${(() => { const ds = Object.entries(gomDon(hop.sl)).filter(([, n]) => n > 0); const t = ds.reduce((s, [m, n]) => s + n * MON[m].gia, 0);
+        return `<button class="nut dai" style="background:var(--cam)" data-act="themtinhtien" ${ds.length ? '' : 'disabled'}>${ds.length ? 'Thêm vào hóa đơn: ' + ds.map(([m, n]) => n + ' ' + MON[m].ten.toLowerCase()).join(', ') + ' · ' + tien(t) : 'Chọn số lượng trước'}</button>`; })()}
       <div style="margin-top:10px">Hoặc gõ chi tiết (vd "Rau sống – thêm diếp cá, 2 dĩa"):</div>
       <input class="o-chu" data-inp="ghichu" maxlength="80" placeholder="Gõ: rau sống, xoài…" value="${esc(hop.chu || '')}">
       <div class="chips" id="goiy-loc"></div>
@@ -557,19 +598,21 @@ function veHop() {
     veGoiYLoc();
   } else if (hop.loai === 'goimon') {
     const moi = !hop.so;
-    const chon = Object.entries(hop.sl).filter(([, n]) => n > 0);
+    const chon = Object.entries(gomDon(hop.sl)).filter(([, n]) => n > 0);
     const tong = chon.reduce((s, [m, n]) => s + n * giaKey(m), 0);
+    const giam = Object.entries(hop.sl).reduce((s, [m, n]) => s + n * giaKey(m), 0) - tong;   // tiền bớt nhờ gộp tô đầy đủ / combo
     const luoi = moi ? `<div>Chọn bàn:</div>` + luoiBan('hopban', false) + (laPhu(hop.chonSo) ? oTenPhu() : '') : '';
     const nhom = Object.keys(TRAM).map(t => {
       if (t === 'xeo') return veNhomXeo();
-      const mon = Object.keys(MON).filter(m => MON[m].tram === t);
+      const mon = Object.keys(MON).filter(m => MON[m].tram === t && !TOPPING.includes(m));
       const coMon = mon.some(m => hop.sl[m] > 0);
-      return `<div class="nhom">${TRAM[t].icon} ${t === 'ca' ? 'Cá kho – phục vụ múc mang lên' : TRAM[t].day}</div>` + mon.map(dongMonHop).join('') +
-        (coMon && t !== 'ca' ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-${t}" maxlength="80" placeholder="Ghi chú cho ${TRAM[t].day.toLowerCase()} (không bắt buộc)" value="${esc(hop.gc[t] || '')}">` : '');
+      return `<div class="nhom">${TRAM[t].icon} ${t === 'ca' ? 'Phục vụ mang (cá kho)' : TRAM[t].day}</div>` + mon.map(dongMonHop).join('') +
+        (coMon && t !== 'ca' ? `<input class="o-chu" style="margin-top:6px" data-inp="gc-${t}" maxlength="80" placeholder="Ghi chú cho ${TRAM[t].day.toLowerCase()} (không bắt buộc)" value="${esc(hop.gc[t] || '')}">` : '') +
+        (t === 'can' ? `<div class="nhom">🥣 Tô chấm &amp; topping (phục vụ mang)</div>` + veTopping() : '');
     }).join('');
     const g = nutGui();
     k.innerHTML = dauHop(moi ? 'Đơn mới (phục vụ nhập hộ)' : `${esc(tenBan(timBan(hop.so)))} – gọi thêm món`) + luoi + nhom + `
-      <div class="tom"><div>${chon.length ? esc(chon.map(([m, n]) => n + ' ' + tenKey(m)).join(', ')) + ' · <b>' + tien(tong) + '</b>' : 'Chưa chọn món nào'}</div>
+      <div class="tom"><div>${chon.length ? esc(chon.map(([m, n]) => n + ' ' + tenKey(m)).join(', ')) + ' · <b>' + tien(tong) + '</b>' + (giam ? ` <small>(đã bớt ${tien(giam)})</small>` : '') : 'Chưa chọn món nào'}</div>
         <button class="nut dai" id="nut-gui" data-act="guimon" ${g.ok ? '' : 'disabled'}>${esc(g.chu)}</button></div>`;
     veGoiYXeo();
   } else if (hop.loai === 'doiban') {
@@ -612,13 +655,17 @@ function veGoiYXeo() {
   const chu = hop.chuXeo || '';
   if (!chu.trim()) { el.innerHTML = ''; return; }
   const dd = doDang(chu), daCo = khongDau(chuanLoai(chu.slice(0, chu.length - dd.length)));
-  const goiY = LOAI_XEO.filter(L => !daCo.includes(khongDau(L)) && (!dd || khongDau(L).startsWith(khongDau(dd))));
+  const goiY = [...LOAI_XEO, ...(daCo ? [] : ['chay'])].filter(L => !daCo.includes(khongDau(L)) && (!dd || khongDau(L).startsWith(khongDau(dd))));
   el.innerHTML = goiY.map(L => `<button class="chip" data-act="dienloai" data-v="${L}">↳ ${L}</button>`).join('') +
     `<div class="xem-truoc">Bếp sẽ thấy: <b>Bánh xèo ${esc(chuanLoai(chu))}</b></div>`;
 }
 function themLoaiGo() {
   const s = chuanLoai(hop.chuXeo || '');
   if (!s) { bao('Gõ loại bánh xèo trước (vd: tôm thịt)'); return; }
+  if (/\bchay\b/.test(khongDau(s))) {   // bánh xèo chay là món riêng, giá riêng, không có nhân
+    if (khongDau(s) !== 'chay') { bao('Bánh xèo chay không có tôm, mực, thịt – chỉ gõ "chay"'); return; }
+    hop.sl.xeo_chay = (hop.sl.xeo_chay || 0) + 1; hop.chuXeo = ''; veHop(); return;
+  }
   const k = 'xeo|' + s;
   hop.sl[k] = (hop.sl[k] || 0) + 1; hop.chuXeo = ''; veHop();
 }
@@ -730,17 +777,18 @@ document.addEventListener('click', (e) => {
     case 'setup': timBan(v).setup = true; bao(tenBan(timBan(v)) + ': đã setup'); break;
     case 'bosetup': timBan(v).setup = false; bao(tenBan(timBan(v)) + ': hoàn tác setup → chưa setup'); break;
     // Đồ cần mang (giữ suốt phiên)
-    case 'moghichu': moHop({ loai: 'ghichu', so: v, chu: '', soCa: 1 }); return;
-    case 'soca': hop.soCa = Math.max(1, Math.min(20, hop.soCa + +el.dataset.d)); veHop(); return;
+    case 'moghichu': moHop({ loai: 'ghichu', so: v, chu: '', sl: {} }); return;
     case 'themnhanh': ghiCanMang(hop.so, v); veHop(); break;
     case 'dienghichu': hop.chu = v + ' – '; veHop(); { const i = document.querySelector('[data-inp="ghichu"]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
     case 'themghichu': if ((hop.chu || '').trim()) { ghiCanMang(hop.so, hop.chu); hop.chu = ''; veHop(); } break;
-    case 'themcakho': {
+    case 'themtinhtien': {   // cá kho / tô chấm / topping khách xin thêm: cộng vào hóa đơn + vào "Chờ mang"
       const b = timBan(hop.so);
-      b.luot.push({ gio: now, nhan: 'gọi thêm', nguon: 'phục vụ nhập hộ', ds: [dong('cakho', hop.soCa, 'moi')] });
+      const ds = Object.entries(gomDon(hop.sl)).filter(([, n]) => n > 0).map(([m, n]) => dong(m, n, 'moi'));
+      if (!ds.length) return;
+      b.luot.push({ gio: now, nhan: 'gọi thêm', nguon: 'phục vụ nhập hộ', ds });
       chuong('phucvu');
-      bao(`🐟 ${tenBan(b)}: +${hop.soCa} cá kho vào hóa đơn – nằm ở "Chờ mang" để múc`, 3500);
-      hop.soCa = 1; veHop(); break;
+      bao(`${tenBan(b)}: + ${ds.map(d => d.sl + ' ' + MON[d.mon].ten.toLowerCase()).join(', ')} vào hóa đơn – nằm ở "Chờ mang"`, 4000);
+      hop.sl = {}; veHop(); break;
     }
     case 'mangxong': {
       const b = timBan(el.dataset.b);
@@ -770,7 +818,7 @@ document.addEventListener('click', (e) => {
     case 'ht': {
       const x = timDong(+v);
       Object.assign(x.d, { tt: 'moi', uu_tien: x.tram !== 'ca', xong_luc: null, len_luc: null });
-      if (x.tram === 'ca') { chuong('phucvu'); bao(`Hoàn tác: ${tenBan(x.b)} – cá kho quay lại "Chờ mang"`); }
+      if (x.tram === 'ca') { chuong('phucvu'); bao(`Hoàn tác: ${tenBan(x.b)} – ${tenMon(x.d).toLowerCase()} quay lại "Chờ mang"`); }
       else { chuong('bep'); bao(`🔔 Máy ${TRAM[x.tram].day}: chuông + rung – ${tenBan(x.b)} làm lại ${tenMon(x.d)} (ưu tiên)`, 3500); }
       break;
     }
@@ -790,9 +838,12 @@ document.addEventListener('click', (e) => {
     case 'themloaigo': themLoaiGo(); return;
     case 'guimon': {
       const so = hop.so || hop.chonSo;
-      const ds = Object.entries(hop.sl).filter(([, n]) => n > 0).map(([k, n]) => {
+      const ds = [];
+      Object.entries(gomDon(hop.sl)).filter(([, n]) => n > 0).forEach(([k, n]) => {
         const [m, loai] = k.split('|');
-        return dong(m, n, 'moi', { gc: hop.gc[MON[m].tram] || '', loai });
+        ds.push(dong(m, n, 'moi', { gc: hop.gc[MON[m].tram] || '', loai }));
+        // Combo: bếp làm đĩa bánh; phục vụ tự có việc mang tô chấm kèm (không tính tiền riêng)
+        if (MON[m].kem_to) ds.push(dong('to_cham', n, 'moi', { kem: true }));
       });
       let b = timBan(so);
       if (b) b.luot.push({ gio: now, nhan: 'gọi thêm', nguon: 'phục vụ nhập hộ', ds });
@@ -830,8 +881,6 @@ document.addEventListener('click', (e) => {
 });
 setInterval(ve, 30000);   // cập nhật số phút
 ve();
-// PWA: dùng chung service worker với màn chính (mất mạng vẫn mở được màn này)
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
