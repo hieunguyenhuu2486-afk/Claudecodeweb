@@ -148,7 +148,12 @@ async function batDau(user) {
   // Mở lại app: nếu trước đó đang ở quầy nào thì giữ chỗ / tự vào lại
   const truoc = luuDoc('quanbay-vai-tro');
   if (!S.ca && truoc && nv.vai_tro_duoc_phep.includes(truoc)) await vao(truoc, true);
-  if (S.ca && quayVe()) return;   // đã ở trong ca rồi mà đến từ trang khác → quay lại luôn
+  // Đến từ trang khác mà đang có ca: ca đó giữ ở máy khác / mất nhịp quá 10 phút → giữ chỗ lại ở máy này rồi mới quay về
+  // (trước đây quay về ngay → trang kia thấy chưa giữ chỗ lại đẩy sang đây → vòng lặp)
+  if (S.ca && VE) {
+    if (!caMayNay()) await vao(S.ca.vai_tro, true);
+    if (caMayNay()) { quayVe(); return; }
+  }
   nhip();
 }
 
@@ -157,7 +162,7 @@ async function taiTatCa() {
   const me = S.user.id;
   const [tt, ca, xin] = await Promise.all([
     sb.rpc('tinh_trang_quay'),
-    sb.from('vao_ca').select('vai_tro, vao_luc, duoc_cho_vao_boi').eq('nhan_vien_id', me).is('roi_luc', null).maybeSingle(),
+    sb.from('vao_ca').select('vai_tro, vao_luc, duoc_cho_vao_boi, may, nhip_cuoi').eq('nhan_vien_id', me).is('roi_luc', null).maybeSingle(),
     sb.from('xin_vao').select('id, vai_tro, luc').eq('nhan_vien_id', me).eq('trang_thai', 'cho').order('luc', { ascending: false }).limit(1),
   ]);
   S.quay = {}; (tt.data || []).forEach(q => S.quay[q.vai_tro] = q);
@@ -183,6 +188,9 @@ async function taiYeuCau() {
   S.yeuCau = (ds || []).filter(x => Date.now() - new Date(x.luc) < HAN_XIN);
 }
 
+// Ca đang giữ đúng ở máy này và còn nhịp trong 10 phút
+const caMayNay = () => !!S.ca && S.ca.may === MAY && !!S.ca.nhip_cuoi && Date.now() - new Date(S.ca.nhip_cuoi) < 10 * 60000;
+
 // ===== Vẽ màn chính =====
 function ve() {
   if (!S.nv) return;
@@ -193,6 +201,7 @@ function ve() {
       <div class="hang"><button class="nut vien" data-tl="${y.id}" data-cho="0">Không</button><button class="nut" data-tl="${y.id}" data-cho="1">Cho vào</button></div></div>`).join('');
   const dangO = S.ca
     ? `<div class="the dang-o">Bạn đang ở: <b>${VAI_TRO[S.ca.vai_tro]}</b><div class="goi-y">từ ${gio(S.ca.vao_luc)}${S.ca.duoc_cho_vao_boi ? ' · vào nhờ được Cho vào' : ''}</div>
+        ${caMayNay() ? '' : `<div class="loi">Máy này chưa giữ chỗ (đang giữ ở máy khác hoặc mất kết nối). Bấm <b>Vào lại ở máy này</b> bên dưới.</div>`}
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--xanh)" href="bai7-don-mon.html">🧾 Đơn món →</a>
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--cam)" href="bai6-fill-do.html">📣 Fill đồ →</a>
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--do)" href="bai6-tam-het.html">⛔ Báo món tạm hết →</a>
@@ -202,7 +211,7 @@ function ve() {
   const quay = ds.map(v => {
     const q = S.quay[v] || { toi_da: '?', so_nguoi: 0, ten: [] };
     const day = q.so_nguoi >= q.toi_da, laToi = S.ca && S.ca.vai_tro === v;
-    const nut = laToi ? `<span class="goi-y">✓ đang ở đây</span>`
+    const nut = laToi ? (caMayNay() ? `<span class="goi-y">✓ đang ở đây</span>` : `<button class="nut" data-vao="${v}">Vào lại ở máy này</button>`)
       : day ? `<button class="nut xin" data-xin="${v}" ${S.xinCuaToi ? 'disabled' : ''}>Xin vào</button>`
       : `<button class="nut" data-vao="${v}">Vào</button>`;
     return `<div class="quay"><div class="ten"><b>${VAI_TRO[v]}</b><small>${q.ten.length ? esc(q.ten.join(', ')) : 'trống'}</small></div>
