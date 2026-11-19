@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fill đồ – Quán Bảy</title>
+<!-- Bài 6.5 bước 2: trang thử Fill đồ (bảng do_fill, yeu_cau_fill + hàm bao_fill, bao_lai_fill, tra_loi_fill, huy_fill,
+     tat_nhac_fill, tinh_trang_nguoi_nhan_fill). Thiết kế: docs/ke-hoach-bai-6.md mục 10.
+     Máy mẹ (ô "Nhận fill") kêu + đọc giọng; máy phục vụ kêu + rung khi bếp báo hết đĩa.
+     Chỉ chứa publishable key (được phép công khai). -->
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --vang:#f1c40f; --xam:#888; --vien:#e5d5bf; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); }
+  header { position:sticky; top:0; z-index:6; padding:12px 16px; background:var(--chu); color:#fff; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header h1 { margin:0; font-size:18px; }
+  .nhan { font-size:11px; background:var(--cam); padding:3px 8px; border-radius:99px; white-space:nowrap; }
+  #ketnoi { font-size:12px; color:#ccc; }
+  main { max-width:520px; margin:0 auto; padding:16px; }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:16px; padding:14px 16px; margin-bottom:12px; }
+  h2 { margin:0 0 8px; font-size:19px; }
+  label { display:block; font-weight:700; margin:12px 0 6px; }
+  input { width:100%; font-size:17px; padding:12px; border:2px solid var(--vien); border-radius:12px; }
+  button { font:inherit; border:0; border-radius:12px; cursor:pointer; }
+  button:disabled { opacity:.5; }
+  .chinh { width:100%; margin-top:14px; padding:16px; font-size:18px; font-weight:800; background:var(--xanh); color:#fff; }
+  .loi { margin-top:12px; padding:12px; border-radius:10px; background:#fdecea; color:var(--do); font-weight:700; }
+  .goi-y { font-size:13px; color:var(--xam); }
+  .canh { padding:12px; border-radius:10px; background:#fff1e0; color:#a35200; margin-bottom:12px; font-weight:700; }
+  .canh a { color:#a35200; }
+  .canh.do { background:#fdecea; color:var(--do); }
+  .seg { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .seg button { flex:1; padding:11px 6px; font-weight:800; background:#eee; color:var(--chu); font-size:14px; }
+  .seg button.chon { background:var(--chu); color:#fff; }
+  .muc { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+  .muc button { padding:12px; font-weight:800; background:#f3e3cc; color:var(--chu); border:3px solid transparent; }
+  .muc button.chon[data-muc=sap_het] { background:#fff3c4; border-color:var(--vang); }
+  .muc button.chon[data-muc=het] { background:#fde2df; border-color:var(--do); }
+  .luoi { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .do { padding:14px 8px; font-weight:800; font-size:16px; background:#fff; color:var(--chu); border:2px solid var(--vien); text-align:center; line-height:1.25; }
+  .do small { display:block; font-size:12px; font-weight:700; margin-top:3px; }
+  .do.mo-vang { background:#fff8dc; border-color:var(--vang); }
+  .do.mo-do { background:#fde2df; border-color:var(--do); }
+  .do.mo-xanh { background:#e6f4ea; border-color:var(--xanh); }
+  .do.dia { border-style:dashed; }
+  .hang-go { display:flex; gap:6px; margin-top:10px; }
+  .hang-go input { flex:1; min-width:0; }
+  .nut { padding:11px 12px; font-weight:800; color:#fff; background:var(--xanh); white-space:nowrap; font-size:14px; }
+  .nut.cam { background:var(--cam); } .nut.do-n { background:var(--do); } .nut.xam { background:#777; }
+  .nut.vien { background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .bao-dong { padding:10px 0; border-top:1px solid #f1e6d6; }
+  .bao-dong:first-of-type { border-top:0; }
+  .bao-dong .dau { display:flex; align-items:center; gap:8px; }
+  .bao-dong .dau b { flex:1; font-size:16px; }
+  .cham { display:inline-block; width:12px; height:12px; border-radius:50%; flex:none; }
+  .cham.vang { background:var(--vang); } .cham.do { background:var(--do); } .cham.xanh { background:var(--xanh); } .cham.xam { background:#bbb; }
+  .tl { font-size:14px; margin:4px 0 0 20px; }
+  .nhac7 { font-size:14px; margin:4px 0 0 20px; color:#a35200; font-weight:700; }
+  .hang-nut { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0 20px; }
+  .so { display:inline-block; min-width:22px; padding:1px 7px; border-radius:99px; background:var(--do); color:#fff; font-size:13px; text-align:center; margin-left:6px; }
+  /* Dải nổi (banner) trên máy người nhận */
+  #dai { position:sticky; top:52px; z-index:5; max-width:520px; margin:0 auto; padding:0 16px; }
+  .dai { border-radius:14px; padding:12px 14px; margin-top:10px; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  .dai.vang { background:#fff3c4; border:3px solid var(--vang); }
+  .dai.do { background:#fde2df; border:3px solid var(--do); animation:nhay 1.2s 3; }
+  @keyframes nhay { 50% { background:#ffbdb5; } }
+  .dai .tieu { font-size:18px; font-weight:800; }
+  .dai .muc-bao { padding:10px 0; border-top:1px solid rgba(0,0,0,.1); }
+  .dai .muc-bao:first-of-type { border-top:0; }
+  .dai .hang-nut { margin-left:0; }
+  .dai .hang-go { margin-top:8px; }
+  .dai .hang-go input { font-size:15px; padding:9px; }
+  .bao { position:fixed; left:12px; right:12px; bottom:16px; background:#222; color:#fff; padding:14px; border-radius:12px; font-size:15px; z-index:9; display:none; }
+  .phu { width:100%; margin-top:6px; padding:12px; background:none; color:var(--xam); text-decoration:underline; }
+  .tt { text-align:center; color:var(--xam); padding:30px 0; }
+</style>
+</head>
+<body>
+<header><h1>📣 Fill đồ</h1><span id="ketnoi"></span><span class="nhan">BÀI 6.5 · THỬ</span></header>
+<div id="dai"></div>
+<main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
+<div class="bao" id="bao"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+<script>
+const URL_KHO = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
+const KHOA_CONG_KHAI = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
+const DUOI_EMAIL = '@nv.banhcanbanhxeobay.id.vn';
+const QUAY = { phuc_vu: 'Phục vụ', xeo: 'Bếp xèo', can: 'Bếp căn', nuoc: 'Quầy nước' };
+const VAI_TRO = { ...QUAY, quan_ly: 'Quản lý' };
+const PHUT = 60000, LEO_THANG = 5 * PHUT, NHAC_7 = 7 * PHUT;   // khớp docs/ke-hoach-bai-6.md mục 10.1
+
+const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
+const man = document.getElementById('man'), daiEl = document.getElementById('dai');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gio = (ts) => new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const luuDoc = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const luuGhi = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const MAY = luuDoc('quanbay-may');   // mã máy do trang Vào ca tạo
+const ngayVN = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+const homNay = () => ngayVN(Date.now());
+const phutTruoc = (ts) => Math.max(0, Math.floor((Date.now() - Date.parse(ts)) / PHUT));
+function bao(chu, ms = 3500) { const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms); }
+
+// ===== Trạng thái =====
+const S = {
+  user: null, nv: null, ca: null, doFill: [], dsBao: [], nguoiNhan: null,
+  quayBao: null, muc: 'sap_het', khac: '', daiMo: false, nghe: false, xacHuy: null,
+};
+const laQuanLy = () => !!(S.nv && S.nv.vai_tro_duoc_phep.includes('quan_ly'));
+const quayToi = () => S.ca ? S.ca.vai_tro : null;
+const laNguoiNhanMe = () => !!(S.nv && S.nv.nhan_fill && S.ca);
+const laPhucVu = () => quayToi() === 'phuc_vu';
+const doCua = (ma) => S.doFill.find(d => d.ma === ma);
+const tenDo = (b) => b.do_ma ? (doCua(b.do_ma) || { ten: b.do_ma }).ten : b.ten_khac;
+const chuBao = (b) => QUAY[b.quay] + ' cần ' + tenDo(b).toLowerCase();       // máy mẹ: không hiện ai báo hộ
+const t0 = (b) => b.bao_lai_luc || b.bao_luc;
+// Mức hiện tại: Hết rồi, hoặc Sắp hết mà 5 phút chưa ai nhận → tự lên Hết rồi
+const mucHT = (b) => (b.muc === 'het' || (b.trang_thai === 'moi' && Date.now() - Date.parse(t0(b)) >= LEO_THANG)) ? 'het' : 'sap_het';
+const baoHomNay = () => S.dsBao.filter(b => b.ngay === homNay());
+const dangMo = (b) => b.trang_thai === 'moi' || b.trang_thai === 'da_nhan';
+// Máy này có phải máy KÊU cho báo này không
+const mayNhan = (b) => (b.gui_toi === 'me' && laNguoiNhanMe()) || (b.gui_toi === 'phuc_vu' && laPhucVu());
+// Báo của quầy mình (để biết mẹ trả lời, nhắc 7 phút)
+const cuaQuayToi = (b) => b.quay === quayToi() || (S.user && b.bao_boi === S.user.id);
+const thuTu = (a, b) => (mucHT(a) === 'het' ? 0 : 1) - (mucHT(b) === 'het' ? 0 : 1) || Date.parse(t0(a)) - Date.parse(t0(b));
+
+// ===== Âm thanh: chuông + giọng đọc, xếp hàng phát lần lượt (giống trang thử âm thanh) =====
+let ac = null;
+function moAm() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch (e) {} }
+document.addEventListener('pointerdown', moAm);
+function chuong(muc) {
+  try { navigator.vibrate && navigator.vibrate(muc === 'het' ? [300, 120, 300, 120, 300] : [200, 100, 200]); } catch (e) {}
+  if (!ac) return 0;
+  const t = ac.currentTime;
+  const beep = (s, f, d) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t + s); g.gain.exponentialRampToValueAtTime(0.6, t + s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + s + d);
+    o.connect(g).connect(ac.destination); o.start(t + s); o.stop(t + s + d + 0.05); };
+  const lan = muc === 'het' ? 3 : 1;
+  for (let i = 0; i < lan; i++) { beep(i * 0.8, 1318, 0.35); beep(i * 0.8 + 0.25, 1046, 0.5); }
+  return lan * 800 + 200;
+}
+function ting() { moAm(); if (!ac) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 1568;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.45); try { navigator.vibrate && navigator.vibrate(150); } catch (e) {} }
+const coGiong = 'speechSynthesis' in window;
+let giongViet = null;
+function taiGiong() { if (coGiong) giongViet = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('vi')) || null; }
+if (coGiong) { taiGiong(); speechSynthesis.onvoiceschanged = taiGiong; }
+const nghi = (ms) => new Promise(r => setTimeout(r, ms));
+function docCau(cau) {
+  return new Promise((xong) => {
+    if (!coGiong || !cau) return xong();
+    const u = new SpeechSynthesisUtterance(cau);
+    u.lang = 'vi-VN'; u.volume = 1; u.rate = 1; if (giongViet) u.voice = giongViet;
+    let da = false; const ket = () => { if (!da) { da = true; clearTimeout(c); xong(); } };
+    u.onend = ket; u.onerror = ket; const c = setTimeout(ket, 6000 + cau.length * 120);
+    try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { ket(); }
+  });
+}
+const hang = []; let dangPhat = false;
+function phat(muc, cau) { hang.push({ muc, cau }); chayHang(); }
+async function chayHang() {
+  if (dangPhat) return; dangPhat = true;
+  while (hang.length) { const x = hang.shift(); moAm(); await nghi(chuong(x.muc)); await docCau(x.cau); await nghi(300); }
+  dangPhat = false;
+}
+// Câu đọc trên máy mẹ: "Bếp xèo, sắp hết giá" / "Bếp xèo, hết giá"
+const cauDoc = (b) => QUAY[b.quay] + ', ' + (mucHT(b) === 'het' ? 'hết ' : 'sắp hết ') + tenDo(b).toLowerCase();
+
+// ===== Bộ đếm nhắc (máy tự tính theo giờ lưu trên kho) =====
+const DA_KEU = {};                                   // id → { lan, luc, muc } lần kêu gần nhất trên máy này
+const DA_NHAC7 = (() => { try { return JSON.parse(luuDoc('quanbay-fill-nhac7') || '{}'); } catch (e) { return {}; } })();
+function keuBao(b) {
+  DA_KEU[b.id] = { lan: b.bao_lai_lan, luc: Date.now(), muc: mucHT(b) };
+  if (b.gui_toi === 'me') phat(mucHT(b), cauDoc(b));   // máy mẹ: chuông + đọc
+  else phat(mucHT(b), null);                           // máy phục vụ (đĩa): chuông + rung, không đọc
+}
+function demNhac() {
+  if (!S.ca) return;
+  const bayGio = Date.now();
+  for (const b of baoHomNay()) {
+    // Máy nhận: báo mới / báo lại / leo thang 5 phút / Hết rồi chưa nhận thì 5 phút đọc lại
+    // (máy mẹ phải bấm "Bắt đầu nghe"; máy phục vụ cần chạm màn hình 1 lần cho chuông kêu được)
+    if (b.trang_thai === 'moi' && mayNhan(b) && (b.gui_toi === 'me' ? S.nghe : !!ac)) {
+      const k = DA_KEU[b.id], m = mucHT(b);
+      if (!k || k.lan !== b.bao_lai_lan) keuBao(b);
+      else if (!b.tat_nhac && m === 'het' && (k.muc === 'sap_het' || bayGio - k.luc >= LEO_THANG)) keuBao(b);
+    }
+    // Mẹ đã nhận 7 phút → nhắc 1 lần cả hai máy rồi thôi
+    if (b.trang_thai === 'da_nhan' && b.nhan_luc && !b.tat_nhac && bayGio - Date.parse(b.nhan_luc) >= NHAC_7) {
+      const k7 = b.id + '|' + b.nhan_luc;
+      if (!DA_NHAC7[k7] && (mayNhan(b) || cuaQuayToi(b))) {
+        const docMe = b.gui_toi === 'me' && mayNhan(b);
+        if (docMe && !S.nghe) continue;               // máy mẹ chưa bấm "Bắt đầu nghe" → chờ, chưa tính là đã nhắc
+        DA_NHAC7[k7] = 1; luuGhi('quanbay-fill-nhac7', JSON.stringify(DA_NHAC7));
+        if (docMe) phat('sap_het', chuBao(b) + ', mẹ mang chưa?');
+        else { moAm(); chuong('sap_het'); }
+      }
+    }
+  }
+}
+
+// ===== Đăng nhập =====
+function veDangNhap(loi) {
+  daiEl.innerHTML = '';
+  man.innerHTML = `<form class="the" id="form"><h2>Đăng nhập</h2>
+    <label for="ten">Tên đăng nhập</label><input id="ten" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="vd: lan">
+    <label for="mk">Mật khẩu</label><input id="mk" type="password" autocomplete="current-password">
+    <button class="chinh" id="nut">Đăng nhập</button>${loi ? `<div class="loi">${esc(loi)}</div>` : ''}</form>`;
+  document.getElementById('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const ten = document.getElementById('ten').value.trim().toLowerCase(), mk = document.getElementById('mk').value;
+    if (!/^[a-z0-9_]{2,20}$/.test(ten) || !mk) return veDangNhap('Nhập đúng tên đăng nhập và mật khẩu.');
+    document.getElementById('nut').disabled = true;
+    const { data, error } = await sb.auth.signInWithPassword({ email: ten + DUOI_EMAIL, password: mk });
+    if (error) return veDangNhap((error.message || '').toLowerCase().includes('invalid login') ? 'Sai tên đăng nhập hoặc mật khẩu.' : 'Không đăng nhập được: ' + error.message);
+    batDau(data.user);
+  };
+}
+
+async function batDau(user) {
+  S.user = user;
+  const { data: nv } = await sb.from('nhan_vien').select('ten_hien_thi, dang_lam, nhan_fill, vai_tro_duoc_phep').eq('id', user.id).maybeSingle();
+  if (!nv || !nv.dang_lam) { man.innerHTML = `<div class="the"><div class="loi">Tài khoản chưa có vai trò hoặc đã khóa. Báo Hieu.</div></div>`; return; }
+  S.nv = nv;
+  if (MAY) await sb.rpc('nhip', { p_may: MAY });     // báo "còn đây" ngay khi mở (nhịp cũ quá 10 phút thì máy chủ coi như chưa vào ca)
+  langNghe();
+  await tai();
+}
+
+async function tai() {
+  const [c, d, y] = await Promise.all([
+    sb.from('vao_ca').select('vai_tro').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
+    sb.from('do_fill').select('ma, ten, quay, gui_toi, thu_tu').eq('dang_dung', true).order('thu_tu'),
+    sb.from('yeu_cau_fill').select('*').eq('ngay', homNay()).order('bao_luc'),
+  ]);
+  if (d.error) { man.innerHTML = `<div class="the"><div class="loi">Không đọc được danh sách đồ: ${esc(d.error.message)}</div></div>`; return; }
+  S.ca = c.data; S.doFill = d.data; S.dsBao = y.error ? [] : y.data;
+  if (!S.quayBao || (!laPhucVu() && !laQuanLy())) S.quayBao = quayToi() && QUAY[quayToi()] ? quayToi() : 'xeo';
+  await taiNguoiNhan();
+  ve();
+  demNhac();
+}
+async function taiNguoiNhan() {
+  if (!S.ca && !laQuanLy()) { S.nguoiNhan = null; return; }
+  const { data } = await sb.rpc('tinh_trang_nguoi_nhan_fill');
+  S.nguoiNhan = data && data.kq === 'ok' ? data : null;
+}
+
+// ===== Vẽ =====
+function giuGo() {   // giữ chữ đang gõ + con trỏ khi vẽ lại
+  const a = document.activeElement;
+  return a && a.tagName === 'INPUT' && a.id ? { id: a.id, v: a.value, p: a.selectionStart } : null;
+}
+function traGo(g) { if (!g) return; const o = document.getElementById(g.id); if (o) { o.value = g.v; o.focus(); try { o.setSelectionRange(g.p, g.p); } catch (e) {} } }
+
+function ve() {
+  if (!S.nv) return;
+  const g = giuGo();
+  veDai();
+  const ql = laQuanLy(), coCa = !!S.ca;
+  let h = coCa || ql
+    ? `<div class="the">Xin chào <b>${esc(S.nv.ten_hien_thi)}</b>${coCa ? ` · đang ở <b>${VAI_TRO[S.ca.vai_tro]}</b>` : ' · quản lý'} · <a href="bai6-vao-ca.html?ve=fill-do">đổi vị trí</a>
+         ${S.nv.nhan_fill ? '<div class="goi-y">Bạn là người <b>nhận fill</b>: máy này kêu + đọc khi có báo.</div>' : ''}</div>`
+    : `<div class="canh">Bạn <b>chưa vào ca</b> nên chưa báo được. <a href="bai6-vao-ca.html?ve=fill-do">→ Vào ca trước</a> (vào xong tự quay lại đây)</div>`;
+
+  if (laNguoiNhanMe() && !S.nghe) {
+    h += `<div class="the"><h2>🔊 Bắt đầu nghe</h2><div class="goi-y">Bấm 1 lần đầu ca. Đặt máy trên giá, cắm sạc, <b>để màn hình sáng, không bấm nút nguồn, không mở app khác</b> – khóa máy thì máy không đọc được.</div>
+      ${coGiong && !giongViet ? '<div class="loi">Máy chưa có giọng tiếng Việt – mở trang Thử âm thanh để xem cách tải.</div>' : ''}
+      <button class="chinh" id="nghe">▶ Bắt đầu nghe</button></div>`;
+  }
+  if (coCa || ql) h += veBaoFill() + veQuayToi() + veGuiMe();
+  h += `<button class="phu" id="thoat">Đăng xuất</button>`;
+  if (h !== ve.cu) { man.innerHTML = h; ve.cu = h; ganNut(man); traGo(g); }   // chỉ vẽ lại khi có gì đổi (không làm mất cú chạm)
+}
+// Đang chạm màn hình thì không vẽ lại (vẽ lại đúng lúc chạm làm mất cú bấm)
+let dangCham = false;
+document.addEventListener('pointerdown', () => { dangCham = true; }, true);
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, () => setTimeout(() => { dangCham = false; }, 400), true));
+const coTheVe = () => !giuGo() && !dangCham;
+
+// Ô báo: nút đồ theo quầy, mức, ô Khác
+function veBaoFill() {
+  const ql = laQuanLy(), pv = laPhucVu();
+  const q = S.quayBao;
+  const tab = (pv || ql) ? `<div class="seg">${Object.keys(QUAY).map(k => `<button class="${k === q ? 'chon' : ''}" data-quay="${k}">${QUAY[k]}</button>`).join('')}</div>
+      ${q !== quayToi() ? `<div class="goi-y" style="margin:-4px 0 8px">Đang <b>báo hộ ${QUAY[q]}</b>. Máy mẹ chỉ hiện "${QUAY[q]} cần …".</div>` : ''}` : '';
+  const mo = baoHomNay().filter(dangMo);
+  const nut = S.doFill.filter(d => d.quay === q).map(d => {
+    const b = mo.find(x => x.do_ma === d.ma && x.quay === q);
+    let cls = '', nho = d.gui_toi === 'phuc_vu' ? '→ phục vụ' : '';
+    if (b) {
+      if (b.trang_thai === 'da_nhan') { cls = 'mo-xanh'; nho = '✅ ' + (b.gui_toi === 'me' ? 'mẹ' : 'phục vụ') + ' đã nhận · bấm = báo lại'; }
+      else { cls = mucHT(b) === 'het' ? 'mo-do' : 'mo-vang'; nho = (mucHT(b) === 'het' ? '🔴' : '🟡') + ' đã báo ' + phutTruoc(t0(b)) + "' · bấm = báo lại"; }
+    }
+    return `<button class="do ${cls} ${d.gui_toi === 'phuc_vu' ? 'dia' : ''}" data-do="${d.ma}">${esc(d.ten)}${nho ? `<small>${nho}</small>` : ''}</button>`;
+  }).join('');
+  const nn = S.nguoiNhan;
+  const canhMe = laNguoiNhanMe() ? '' : !nn || !nn.co_nguoi
+    ? `<div class="canh do">⚠ Mẹ chưa vào ca – báo miệng giúp</div>`
+    : nn.nhip_giay > 120 ? `<div class="canh do">⚠ Máy mẹ đang mất kết nối – báo miệng giúp</div>` : '';
+  return `<div class="the"><h2>Báo fill</h2>${tab}${canhMe}
+    <div class="muc"><button data-muc="sap_het" class="${S.muc === 'sap_het' ? 'chon' : ''}">🟡 Sắp hết</button><button data-muc="het" class="${S.muc === 'het' ? 'chon' : ''}">🔴 Hết rồi</button></div>
+    <div class="luoi">${nut}</div>
+    <div class="hang-go"><input id="khac" maxlength="60" placeholder="Khác: gõ đồ cần fill…" value="${esc(S.khac)}"><button class="nut cam" id="guiKhac">Báo</button></div>
+    <div class="goi-y" style="margin-top:6px">Chạm 1 lần là báo (mặc định 🟡 Sắp hết). Hết sạch thì chọn 🔴 trước rồi chạm. Hết hẳn không bổ sung được thì dùng trang <a href="bai6-tam-het.html">Món tạm hết</a>.</div></div>`;
+}
+
+// Báo của quầy mình: thấy mẹ trả lời, Báo lại, Hủy, nhắc 7 phút
+function veQuayToi() {
+  if (!S.ca) return '';
+  const pv = laPhucVu() || laQuanLy();   // phục vụ / Hieu: báo gửi mẹ đã nằm ở mục "Báo gửi mẹ", không lặp lại
+  const ds = baoHomNay().filter(b => cuaQuayToi(b) && !(pv && b.gui_toi === 'me') && (dangMo(b) || b.trang_thai === 'khong_con')).sort(thuTu);
+  if (!ds.length) return '';
+  return `<div class="the"><h2>Báo của ${laPhucVu() ? 'bạn' : QUAY[quayToi()]}</h2>${ds.map(b => dongBao(b, 'quay')).join('')}</div>`;
+}
+// Danh sách báo gửi mẹ: phục vụ / Hieu thấy hết và bấm thay; mẹ thấy phần đang mang ra
+function veGuiMe() {
+  const ql = laQuanLy(), pv = laPhucVu(), me = laNguoiNhanMe();
+  if (!pv && !ql && !me) return '';
+  const ds = baoHomNay().filter(b => b.gui_toi === 'me' && dangMo(b) && (pv || ql || b.trang_thai === 'da_nhan')).sort(thuTu);
+  const chua = ds.filter(b => b.trang_thai === 'moi').length;
+  const tieu = me && !pv && !ql ? 'Mẹ đang mang ra' : 'Báo gửi mẹ';
+  return `<div class="the"><h2>${tieu}${chua ? `<span class="so">${chua}</span>` : ''}</h2>
+    ${ds.length ? ds.map(b => dongBao(b, 'me')).join('') : '<div class="goi-y">Chưa có báo nào.</div>'}</div>`;
+}
+function dongBao(b, che) {
+  const pv = laPhucVu() || laQuanLy();
+  const mo = dangMo(b);
+  const cham = !mo ? 'xam' : b.trang_thai === 'da_nhan' ? 'xanh' : mucHT(b) === 'het' ? 'do' : 'vang';
+  const ai = b.gui_toi === 'me' ? 'Mẹ' : 'Phục vụ';
+  let tl = '';
+  if (b.trang_thai === 'moi') tl = `Đã báo ${gio(t0(b))} · chờ ${ai.toLowerCase()} nhận (${phutTruoc(t0(b))}')${b.bao_lai_lan ? ' · báo lại ' + b.bao_lai_lan + ' lần' : ''}${b.tat_nhac ? ' · 🔕 tắt nhắc' : ''}`;
+  else if (b.trang_thai === 'da_nhan') tl = `✅ ${ai}: ${esc(b.tra_loi || 'Đã nhận')} (${gio(b.nhan_luc)})`;
+  else if (b.trang_thai === 'khong_con') tl = `⛔ ${ai}: ${esc(b.tra_loi || 'Hết rồi, không còn')}`;
+  const nhac7 = b.trang_thai === 'da_nhan' && b.nhan_luc && Date.now() - Date.parse(b.nhan_luc) >= NHAC_7
+    ? `<div class="nhac7">${mayNhan(b) ? `Đã nhận ${phutTruoc(b.nhan_luc)} phút rồi – ${b.gui_toi === 'me' ? 'mẹ mang chưa?' : 'mang chưa?'}` : `${ai} nhận ${phutTruoc(b.nhan_luc)} phút rồi – còn thiếu thì bấm Báo lại`}</div>` : '';
+  const nut = [];
+  if (mo && (cuaQuayToi(b) || pv)) nut.push(`<button class="nut cam" data-lai="${b.id}">Báo lại</button>`);
+  if (b.trang_thai === 'da_nhan' && b.gui_toi === 'me' && laNguoiNhanMe())
+    nut.push(`<button class="nut do-n" data-het="${b.id}" data-loi="Hết ${esc(tenDo(b).toLowerCase())} rồi">Hết ${esc(tenDo(b).toLowerCase())} rồi</button>`);
+  if (mo && che === 'me' && pv && b.trang_thai === 'moi') nut.push(`<button class="nut" data-nhan="${b.id}">Đã nhận (thay mẹ)</button>`);
+  if (mo && pv) nut.push(`<button class="nut vien" data-tat="${b.id}" data-v="${b.tat_nhac ? 0 : 1}">${b.tat_nhac ? '🔔 Bật nhắc' : '🔕 Tắt nhắc'}</button>`);
+  if (mo && (pv || b.bao_boi === S.user.id)) nut.push(`<button class="nut xam" data-huy="${b.id}">${S.xacHuy === b.id ? 'Chạm lần nữa để hủy' : 'Hủy (báo nhầm)'}</button>`);
+  return `<div class="bao-dong"><div class="dau"><span class="cham ${cham}"></span><b>${esc(chuBao(b))}</b></div>
+    <div class="tl">${tl}</div>${nhac7}${nut.length ? `<div class="hang-nut">${nut.join('')}</div>` : ''}</div>`;
+}
+
+// Dải nổi trên máy người nhận: báo chưa nhận. Nhiều báo → chạm là mở + phát lần lượt
+function veDai() {
+  const ds = baoHomNay().filter(b => b.trang_thai === 'moi' && mayNhan(b)).sort(thuTu);
+  if (!ds.length) { if (veDai.cu) { daiEl.innerHTML = ''; veDai.cu = ''; } S.daiMo = false; return; }
+  const coDo = ds.some(b => mucHT(b) === 'het');
+  let h;
+  if (ds.length > 1 && !S.daiMo) {
+    h = `<div class="dai ${coDo ? 'do' : 'vang'}" id="moDai" role="button"><div class="tieu">${coDo ? '🔴' : '🟡'} ${ds.length} báo fill – chạm để nghe và xem</div>
+      <div class="goi-y">${esc(ds.map(chuBao).join(' · '))}</div></div>`;
+  } else {
+    h = `<div class="dai ${coDo ? 'do' : 'vang'}">${ds.map(b => {
+      const ten = tenDo(b).toLowerCase();
+      const goiY = b.gui_toi === 'me'
+        ? `<button class="nut" data-nhan="${b.id}">Đã nhận</button><button class="nut" data-nhan="${b.id}" data-loi="Chờ chút, đang mang ra">Chờ chút, đang mang ra</button><button class="nut do-n" data-het="${b.id}" data-loi="Hết ${esc(ten)} rồi">Hết ${esc(ten)} rồi</button>`
+        : `<button class="nut" data-nhan="${b.id}">Đã nhận</button>`;
+      return `<div class="muc-bao"><div class="tieu">${mucHT(b) === 'het' ? '🔴' : '🟡'} ${esc(chuBao(b))}</div>
+        <div class="goi-y">${phutTruoc(t0(b))} phút trước${b.bao_lai_lan ? ' · báo lại ' + b.bao_lai_lan + ' lần' : ''}</div>
+        <div class="hang-nut">${goiY}${b.gui_toi === 'me' ? `<button class="nut vien" data-doc="${b.id}">🔊 Nghe lại</button>` : ''}</div>
+        ${b.gui_toi === 'me' ? `<div class="hang-go"><input id="tl-${b.id}" maxlength="100" placeholder="Hoặc gõ trả lời…"><button class="nut" data-go="${b.id}">Gửi</button></div>` : ''}</div>`;
+    }).join('')}${ds.length > 1 ? `<button class="nut vien" id="dongDai" style="width:100%;margin-top:6px">Thu gọn</button>` : ''}</div>`;
+  }
+  if (h === veDai.cu) return;
+  daiEl.innerHTML = h; veDai.cu = h;
+  ganNut(daiEl);
+  const mo = document.getElementById('moDai');
+  if (mo) mo.onclick = () => { S.daiMo = true; moAm(); ds.forEach(b => phat(mucHT(b), b.gui_toi === 'me' ? cauDoc(b) : null)); ve(); };
+  const dong = document.getElementById('dongDai');
+  if (dong) dong.onclick = () => { S.daiMo = false; ve(); };
+}
+
+function ganNut(goc) {
+  const q = (s) => goc.querySelectorAll(s);
+  q('[data-quay]').forEach(b => b.onclick = () => { S.quayBao = b.dataset.quay; ve(); });
+  q('[data-muc]').forEach(b => b.onclick = () => { S.muc = b.dataset.muc; ve(); });
+  q('[data-do]').forEach(b => b.onclick = () => baoFill(b.dataset.do, null));
+  q('[data-lai]').forEach(b => b.onclick = () => goi('bao_lai_fill', { p_id: +b.dataset.lai }, '📣 Đã báo lại'));
+  q('[data-nhan]').forEach(b => b.onclick = () => goi('tra_loi_fill', { p_id: +b.dataset.nhan, p_kieu: 'nhan', p_loi: b.dataset.loi || null }, '✅ Đã nhận'));
+  q('[data-het]').forEach(b => b.onclick = () => goi('tra_loi_fill', { p_id: +b.dataset.het, p_kieu: 'khong_con', p_loi: b.dataset.loi || null }, '⛔ Đã báo không còn'));
+  q('[data-go]').forEach(b => b.onclick = () => { const o = document.getElementById('tl-' + b.dataset.go); if (!o || !o.value.trim()) return bao('Gõ câu trả lời trước.');
+    goi('tra_loi_fill', { p_id: +b.dataset.go, p_kieu: 'nhan', p_loi: o.value.trim() }, '✅ Đã gửi trả lời'); });
+  q('[data-doc]').forEach(b => b.onclick = () => { const x = S.dsBao.find(y => y.id === +b.dataset.doc); if (x) phat(mucHT(x), cauDoc(x)); });
+  q('[data-tat]').forEach(b => b.onclick = () => goi('tat_nhac_fill', { p_id: +b.dataset.tat, p_tat: b.dataset.v === '1' }, b.dataset.v === '1' ? '🔕 Đã tắt nhắc' : '🔔 Đã bật nhắc'));
+  q('[data-huy]').forEach(b => b.onclick = () => {
+    const id = +b.dataset.huy;
+    if (S.xacHuy !== id) { S.xacHuy = id; ve(); setTimeout(() => { if (S.xacHuy === id) { S.xacHuy = null; ve(); } }, 4000); return; }
+    S.xacHuy = null; goi('huy_fill', { p_id: id }, '🗑 Đã hủy báo');
+  });
+  const k = goc.querySelector('#khac');
+  if (k) { k.oninput = () => { S.khac = k.value; }; k.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); baoFill(null, S.khac); } }; }
+  const gk = goc.querySelector('#guiKhac'); if (gk) gk.onclick = () => baoFill(null, S.khac);
+  const ng = goc.querySelector('#nghe'); if (ng) ng.onclick = batDauNghe;
+  const th = goc.querySelector('#thoat'); if (th) th.onclick = async () => { await sb.auth.signOut(); location.reload(); };
+}
+
+// ===== Hành động (đều qua máy chủ) =====
+const LOI = {
+  chua_vao_ca: 'Bạn chưa vào ca (hoặc mất kết nối quá 10 phút). Vào ca trước.',
+  khong_duoc_phep: 'Bạn không bấm được việc này.', khong_co_do: 'Không có đồ này ở quầy đó.',
+  du_lieu_sai: 'Thiếu thông tin – chọn đồ hoặc gõ ô Khác.', het_han: 'Báo này là của hôm trước.',
+  da_dong: 'Báo này đã xong – bấm nút đồ để báo mới.', khong_co: 'Không tìm thấy báo.',
+};
+async function goi(ham, thamSo, okChu) {
+  const { data, error } = await sb.rpc(ham, thamSo);
+  if (error) { bao('Lỗi: ' + error.message); return null; }
+  if (data.kq !== 'ok') { bao(LOI[data.kq] || data.kq); return data; }
+  bao(okChu); await taiBao(); return data;
+}
+async function baoFill(doMa, khac) {
+  if (!doMa && !(khac || '').trim()) return bao('Gõ đồ cần fill vào ô Khác.');
+  const d = doMa && doCua(doMa);
+  const data = await goi('bao_fill', { p_quay: S.quayBao, p_do_ma: doMa, p_ten_khac: doMa ? null : khac.trim(), p_muc: S.muc },
+    '📣 Đã báo: ' + QUAY[S.quayBao] + ' cần ' + (d ? d.ten : khac.trim()).toLowerCase() + (d && d.gui_toi === 'phuc_vu' ? ' (→ phục vụ)' : ''));
+  if (data && data.kq === 'ok') {
+    if (data.trung) bao('📣 Đã báo lại (🔴): ' + QUAY[S.quayBao] + ' cần ' + (d ? d.ten : khac).toLowerCase());
+    S.muc = 'sap_het'; if (!doMa) S.khac = '';
+    taiNguoiNhan().then(ve);
+  }
+}
+async function taiBao() {
+  const { data } = await sb.from('yeu_cau_fill').select('*').eq('ngay', homNay()).order('bao_luc');
+  if (data) { S.dsBao = data; ve(); demNhac(); }
+}
+
+// Máy mẹ: mở âm thanh + giữ màn hình sáng, rồi đọc các báo đang chờ
+let khoaMan = null;
+async function giuMan() { try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !khoaMan) { khoaMan = await navigator.wakeLock.request('screen'); khoaMan.onrelease = () => { khoaMan = null; }; } } catch (e) {} }
+async function batDauNghe() {
+  moAm(); S.nghe = true; taiGiong(); await giuMan();
+  phat('sap_het', 'Đã bắt đầu nghe');
+  ve(); demNhac();
+}
+
+// ===== Nhịp + đếm giờ =====
+setInterval(() => { if (S.user && MAY) sb.rpc('nhip', { p_may: MAY }); taiNguoiNhan().then(() => { if (coTheVe()) ve(); }); }, 60000);
+setInterval(() => { if (!S.user) return; demNhac(); if (coTheVe()) ve(); }, 5000);   // leo thang, nhắc, cập nhật số phút
+
+// ===== Realtime: báo mới / mẹ trả lời / báo lại → mọi máy thấy ngay =====
+let kenh = null;
+function langNghe() {
+  if (kenh) return;
+  const kn = document.getElementById('ketnoi');
+  kenh = sb.channel('fill-do').on('postgres_changes', { event: '*', schema: 'public', table: 'yeu_cau_fill' }, (p) => {
+    const moi = p.new; if (!moi || !moi.id) return;
+    const i = S.dsBao.findIndex(x => x.id === moi.id), cu = i >= 0 ? S.dsBao[i] : null;
+    if (i >= 0) S.dsBao[i] = moi; else S.dsBao.push(moi);
+    // Người báo: mẹ (hoặc phục vụ) vừa trả lời → "ting" + hiện câu trả lời
+    if (S.ca && cuaQuayToi(moi) && !mayNhan(moi) && cu && (cu.trang_thai !== moi.trang_thai || cu.tra_loi !== moi.tra_loi)
+        && (moi.trang_thai === 'da_nhan' || moi.trang_thai === 'khong_con')) {
+      ting(); bao((moi.gui_toi === 'me' ? 'Mẹ' : 'Phục vụ') + ': ' + (moi.tra_loi || (moi.trang_thai === 'da_nhan' ? 'Đã nhận' : 'Hết rồi')) + ' – ' + chuBao(moi), 6000);
+    }
+    if (coTheVe()) ve();   // đang gõ / đang chạm thì để yên, 5 giây sau tự vẽ lại
+    demNhac();
+  }).subscribe(st => { kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase(); if (st === 'SUBSCRIBED' && S.user) taiBao(); });
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { if (S.nghe) giuMan(); if (MAY) sb.rpc('nhip', { p_may: MAY }); tai(); } });
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  session ? batDau(session.user) : veDangNhap();
+})();
+</script>
+</body>
+</html>
