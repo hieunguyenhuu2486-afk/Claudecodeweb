@@ -34,6 +34,15 @@
   .mon .ten b { display:block; font-size:16px; }
   .mon.het .ten b { color:var(--xam); text-decoration:line-through; }
   .gia { font-weight:800; white-space:nowrap; }
+  .tuy-chon { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 10px; }
+  .chip { padding:8px 10px; font-size:13px; font-weight:800; background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .chip.het { background:#fdecea; color:var(--do); border-color:var(--do); }
+  .tc-het { font-size:13px; font-weight:800; color:var(--do); padding:0 0 8px; }
+  .tc-con { font-size:13px; font-weight:800; color:var(--xanh); padding:0 0 8px; }
+  .hang-go { display:flex; gap:6px; padding:0 0 8px; }
+  .hang-go input { flex:1; min-width:0; font-size:16px; padding:10px 12px; }
+  .goi-nhan { display:flex; flex-wrap:wrap; gap:6px; padding:0 0 8px; }
+  .goi-nhan:empty { display:none; }
   .tag-het { display:inline-block; margin-top:3px; font-size:12px; font-weight:800; color:#fff; background:var(--do); padding:2px 8px; border-radius:6px; }
   .nut { padding:10px 12px; font-weight:800; color:#fff; background:var(--do); white-space:nowrap; font-size:14px; }
   .nut.mo { background:var(--xanh); }
@@ -68,12 +77,19 @@ function bao(chu, ms = 3500) { const el = document.getElementById('bao'); el.tex
 
 // "Tạm hết" chỉ tính trong HÔM NAY (giờ Việt Nam) – sang ngày mới tự mở bán lại
 const ngayVN = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
-const laHet = (m) => !!m.tam_het_luc && ngayVN(m.tam_het_luc) === ngayVN(Date.now());
+const hetHomNay = (luc) => !!luc && ngayVN(luc) === ngayVN(Date.now());
+const tuyChonCua = (m) => S.tuyChon.filter(t => t.ma_mon === m.ma);
+// Món tạm hết khi bấm cả món, hoặc khi MỌI nhân của món đều tạm hết
+const laHet = (m) => hetHomNay(m.tam_het_luc) || (tuyChonCua(m).length > 0 && tuyChonCua(m).every(t => hetHomNay(t.tam_het_luc)));
+const TEN_NGAN = { xeo: 'xèo' };   // nhân viên thấy "Tạm hết xèo thịt"
 // Gợi ý món thay: cùng nhóm, còn bán, giá gần nhất
 const goiYThay = (m) => S.menu.filter(x => x.nhom === m.nhom && x.ma !== m.ma && x.dang_ban && !laHet(x))
   .sort((a, b) => Math.abs(a.gia - m.gia) - Math.abs(b.gia - m.gia)).slice(0, 2);
 
-const S = { user: null, nv: null, ca: null, menu: [], che: 'nv' };   // che: 'nv' (nhân viên) | 'khach' (xem như khách)
+const S = { user: null, nv: null, ca: null, menu: [], tuyChon: [], che: 'nv', goNhan: '' };   // che: 'nv' (nhân viên) | 'khach' (xem như khách); goNhan: chữ đang gõ ở ô báo hết nhân
+const khongDau = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase().trim();
+// "hết nhân thịt", "het thit, tom" → các từ còn lại sau khi bỏ chữ thừa
+const tuNhan = (chu) => khongDau(chu).split(/[\s,+]+/).filter(w => w && !['het', 'nhan', 'banh', 'xeo', 'tam'].includes(w));
 
 function veDangNhap(loi) {
   man.innerHTML = `<form class="the" id="form"><h2>Đăng nhập</h2>
@@ -101,17 +117,19 @@ async function batDau(user) {
 }
 
 async function tai() {
-  const [m, c] = await Promise.all([
+  const [m, c, t] = await Promise.all([
     sb.from('thuc_don').select('ma, ten, nhom, gia, don_vi, mo_ta, gia_tam, dang_ban, thu_tu, tam_het_luc').eq('dang_ban', true).order('thu_tu'),
     sb.from('vao_ca').select('vai_tro').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
+    sb.from('tuy_chon_mon').select('ma_mon, ma, ten, ten_khach, thu_tu, tam_het_luc').order('thu_tu'),
   ]);
   if (m.error) { man.innerHTML = `<div class="the"><div class="loi">Không đọc được thực đơn: ${esc(m.error.message)}</div></div>`; return; }
-  S.menu = m.data; S.ca = c.data;
+  S.menu = m.data; S.ca = c.data; S.tuyChon = t.error ? [] : t.data;   // chưa có bảng nhân → bỏ qua
   ve();
 }
 
 function ve() {
-  const seg = `<div class="seg"><button class="${S.che === 'nv' ? 'chon' : ''}" data-che="nv">Nhân viên bấm</button><button class="${S.che === 'khach' ? 'chon' : ''}" data-che="khach">Xem như khách</button></div>`;
+  const dangGo = document.activeElement && document.activeElement.id === 'go-nhan';
+  const seg =`<div class="seg"><button class="${S.che === 'nv' ? 'chon' : ''}" data-che="nv">Nhân viên bấm</button><button class="${S.che === 'khach' ? 'chon' : ''}" data-che="khach">Xem như khách</button></div>`;
   const soHet = S.menu.filter(laHet).length;
   let dau;
   if (S.che === 'nv') {
@@ -127,17 +145,27 @@ function ve() {
     return `<div class="the"><div class="nhom">${NHOM[n]}</div>` + ds.map(m => {
       const het = laHet(m);
       const nut = S.che === 'nv'
-        ? (het ? `<button class="nut mo" data-mo="${m.ma}" ${S.ca ? '' : 'disabled'}>Mở bán lại</button>` : `<button class="nut" data-het="${m.ma}" ${S.ca ? '' : 'disabled'}>Tạm hết</button>`)
+        ? (hetHomNay(m.tam_het_luc) ? `<button class="nut mo" data-mo="${m.ma}" ${S.ca ? '' : 'disabled'}>Mở bán lại</button>` : `<button class="nut" data-het="${m.ma}" ${S.ca ? '' : 'disabled'}>Tạm hết</button>`)
         : `<span class="gia">${tien(m.gia)}</span>`;
       return `<div class="mon ${het ? 'het' : ''}" ${S.che === 'khach' ? `data-xem="${m.ma}"` : ''}>
         <div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(m.gia)}/${esc(m.don_vi)}${m.gia_tam ? ' (giá tạm)' : ''}${m.mo_ta ? ' · ' + esc(m.mo_ta) : ''}</span>
-          ${het ? `<br><span class="tag-het">TẠM HẾT${S.che === 'nv' ? ' từ ' + gio(m.tam_het_luc) : ''}</span>` : ''}</div>${nut}</div>`;
+          ${het ? `<br><span class="tag-het">TẠM HẾT${S.che === 'nv' && hetHomNay(m.tam_het_luc) ? ' từ ' + gio(m.tam_het_luc) : ''}</span>` : ''}</div>${nut}</div>`
+        + veTuyChon(m);
     }).join('') + `</div>`;
   }).join('');
   man.innerHTML = seg + dau + nhom + `<button class="phu" id="thoat">Đăng xuất</button>`;
   man.querySelectorAll('[data-che]').forEach(b => b.onclick = () => { S.che = b.dataset.che; ve(); });
   man.querySelectorAll('[data-het]').forEach(b => b.onclick = () => dat(b.dataset.het, true));
   man.querySelectorAll('[data-mo]').forEach(b => b.onclick = () => dat(b.dataset.mo, false));
+  man.querySelectorAll('[data-tc]').forEach(b => b.onclick = () => { const [mm, ma, h] = b.dataset.tc.split('|'); datTuyChon(mm, ma, h === '1'); });
+  const o = document.getElementById('go-nhan');
+  if (o) {
+    o.oninput = () => { S.goNhan = o.value; veGoiYNhan(); };
+    o.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); baoHetTuChu(); } };
+    document.getElementById('nut-nhan').onclick = baoHetTuChu;
+    veGoiYNhan();
+    if (dangGo) { o.focus(); o.setSelectionRange(o.value.length, o.value.length); }
+  }
   man.querySelectorAll('[data-xem]').forEach(el => el.onclick = () => {
     const m = S.menu.find(x => x.ma === el.dataset.xem);
     if (!laHet(m)) return bao('Khách chọn: ' + m.ten);
@@ -145,6 +173,60 @@ function ve() {
     bao(`"${m.ten}" tạm hết. ${g.length ? 'Thử: ' + g.map(x => x.ten + ' (' + tien(x.gia) + ')').join(' / ') : 'Hiện chưa có món thay cùng nhóm.'}`, 6000);
   });
   document.getElementById('thoat').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+}
+
+// Ô nhỏ dưới món có nhân (bánh xèo: tôm / mực / thịt)
+function veTuyChon(m) {
+  const ds = tuyChonCua(m);
+  if (!ds.length || hetHomNay(m.tam_het_luc)) return '';
+  if (S.che === 'nv') {
+    return `<div class="tuy-chon">${ds.map(t => hetHomNay(t.tam_het_luc)
+      ? `<button class="chip het" data-tc="${m.ma}|${t.ma}|0" ${S.ca ? '' : 'disabled'}>⛔ Tạm hết ${TEN_NGAN[m.ma] || esc(m.ten)} ${esc(t.ten)} · mở lại</button>`
+      : `<button class="chip" data-tc="${m.ma}|${t.ma}|1" ${S.ca ? '' : 'disabled'}>Hết ${esc(t.ten)}</button>`).join('')}</div>
+      <div class="hang-go"><input id="go-nhan" data-mon="${m.ma}" maxlength="40" autocomplete="off" placeholder="Hoặc gõ: hết nhân thịt, tôm…" value="${esc(S.goNhan)}" ${S.ca ? '' : 'disabled'}><button class="nut" id="nut-nhan" ${S.ca ? '' : 'disabled'}>Báo hết</button></div>
+      <div class="goi-nhan" id="goi-nhan"></div>`;
+  }
+  // Màn khách: chỉ báo hết nhân nào + còn chọn được nhân nào (Hieu 18/11, không nhắc tới "thập cẩm")
+  const het = ds.filter(t => hetHomNay(t.tam_het_luc));
+  if (!het.length || het.length === ds.length) return '';
+  const con = ds.filter(t => !hetHomNay(t.tam_het_luc));
+  return `<div class="tc-het">⛔ ${esc(m.ten)} tạm thời hết nhân ${esc(het.map(t => t.ten).join(', '))}</div>
+    <div class="tc-con">Quý khách chọn được: ${esc(m.ten.toLowerCase())} nhân ${esc(con.map(t => t.ten).join(', '))}</div>`;
+}
+// Ô gõ giống lúc gọi món: gõ không dấu cũng được, hiện gợi ý theo chữ đang gõ
+function veGoiYNhan() {
+  const el = document.getElementById('goi-nhan'), o = document.getElementById('go-nhan');
+  if (!el || !o) return;
+  const ds = tuyChonCua({ ma: o.dataset.mon }), chu = S.goNhan;
+  const cuoi = /[\s,+]$/.test(chu) ? '' : (tuNhan(chu).slice(-1)[0] || '');
+  const daGo = tuNhan(chu).filter(w => w !== cuoi || ds.some(t => khongDau(t.ten) === w));
+  const goiY = !chu.trim() ? [] : ds.filter(t => !hetHomNay(t.tam_het_luc) && !daGo.includes(khongDau(t.ten)) && khongDau(t.ten).startsWith(cuoi));
+  el.innerHTML = goiY.map(t => `<button class="chip" data-dien="${esc(t.ten)}">↳ ${esc(t.ten)}</button>`).join('');
+  el.querySelectorAll('[data-dien]').forEach(b => b.onclick = () => {
+    const dau = cuoi ? chu.replace(/[^\s,+]*$/, '') : /[\s,+]$/.test(chu) ? chu : chu + ' ';
+    S.goNhan = dau + b.dataset.dien + ' ';
+    o.value = S.goNhan; o.focus(); veGoiYNhan();
+  });
+}
+async function baoHetTuChu() {
+  const o = document.getElementById('go-nhan');
+  if (!o || !S.ca) return;
+  const maMon = o.dataset.mon, ds = tuyChonCua({ ma: maMon }), tu = tuNhan(S.goNhan);
+  if (!tu.length) return bao('Gõ nhân đã hết, ví dụ: hết nhân thịt');
+  const chon = ds.filter(t => tu.includes(khongDau(t.ten)));
+  const la = tu.filter(w => !ds.some(t => khongDau(t.ten) === w));
+  if (la.length) return bao(`Không có nhân "${la.join(', ')}". Chỉ có: ${ds.map(t => t.ten).join(', ')}.`);
+  const moi = chon.filter(t => !hetHomNay(t.tam_het_luc));
+  if (!moi.length) return bao('Nhân này đã báo tạm hết rồi. Muốn mở lại thì bấm ô đỏ.');
+  S.goNhan = '';
+  for (const t of moi) await datTuyChon(maMon, t.ma, true);
+}
+async function datTuyChon(maMon, ma, het) {
+  const t = S.tuyChon.find(x => x.ma_mon === maMon && x.ma === ma);
+  const { data, error } = await sb.rpc('dat_tam_het_tuy_chon', { p_ma_mon: maMon, p_ma: ma, p_het: het });
+  if (error) return bao('Lỗi: ' + error.message);
+  bao({ ok: (het ? '⛔ Tạm hết ' : '✅ Có lại ') + (TEN_NGAN[maMon] || maMon) + ' ' + t.ten, chua_vao_ca: 'Bạn chưa vào ca (hoặc mất kết nối quá 10 phút). Vào ca trước.', khong_co_mon: 'Không tìm thấy.' }[data.kq] || data.kq);
+  await tai();
 }
 
 async function dat(ma, het) {
@@ -166,6 +248,9 @@ function langNghe() {
   kenh = sb.channel('thuc-don').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'thuc_don' }, (p) => {
     const i = S.menu.findIndex(x => x.ma === p.new.ma);
     if (i >= 0) { S.menu[i] = { ...S.menu[i], ...p.new }; ve(); }
+  }).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tuy_chon_mon' }, (p) => {
+    const i = S.tuyChon.findIndex(x => x.ma_mon === p.new.ma_mon && x.ma === p.new.ma);
+    if (i >= 0) { S.tuyChon[i] = { ...S.tuyChon[i], ...p.new }; ve(); }
   }).subscribe(st => kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase());
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) tai(); });
