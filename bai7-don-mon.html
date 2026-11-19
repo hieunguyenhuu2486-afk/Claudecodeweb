@@ -181,14 +181,16 @@ async function batDau(user) {
 async function tai() {
   if (!S.user) return;
   const [c, m, t, b, p] = await Promise.all([
-    sb.from('vao_ca').select('vai_tro').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
+    sb.from('vao_ca').select('vai_tro, nhip_cuoi').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
     sb.from('thuc_don').select('ma, ten, nhom, tram, gia, don_vi, thu_tu, tam_het_luc').eq('dang_ban', true).order('thu_tu'),
     sb.from('tuy_chon_mon').select('ma_mon, ma, ten, tam_het_luc').order('thu_tu'),
     sb.from('ban').select('ma, loai, thu_tu').order('thu_tu'),
     sb.from('phien_ban').select('*').eq('trang_thai', 'dang_an').order('mo_luc'),
   ]);
   if (m.error || p.error) { ve.cu = null; man.innerHTML = `<div class="the"><div class="loi">Không đọc được dữ liệu: ${esc((m.error || p.error).message)}</div></div>`; return; }
-  S.ca = c.data; S.menu = m.data; S.tuyChon = t.data || []; S.ban = b.data || []; S.phien = p.data;
+  // Quá 10 phút không có nhịp thì kho coi như đã rời ca → trang cũng coi như chưa vào ca
+  S.ca = c.data && c.data.nhip_cuoi && Date.now() - new Date(c.data.nhip_cuoi) < 10 * 60000 ? c.data : null;
+  S.menu = m.data; S.tuyChon = t.data || []; S.ban = b.data || []; S.phien = p.data;
   const ids = S.phien.map(x => x.id);
   if (ids.length) {
     const [l, d] = await Promise.all([
