@@ -106,6 +106,8 @@
   .hang-mon .nut-hang { margin:0 0 8px; justify-content:flex-end; }
   .tien-mon { text-align:right; font-size:17px; font-weight:900; white-space:nowrap; }
   .tien-mon small { display:block; font-size:12px; font-weight:600; color:var(--xam); }
+  .hang-mon.cm-chua { background:#fff8e1; margin:0 -14px; padding:0 14px; }
+  .them-cm { background:#fff4e6; border:2px dashed var(--cam); border-radius:12px; padding:4px 10px 10px; margin-bottom:8px; }
   .mo-cm { display:flex; width:100%; justify-content:space-between; align-items:center; padding:4px 0; background:none; color:var(--chu); font-size:17px; font-weight:900; border-radius:0; }
   .dem-cm { display:inline-block; min-width:24px; padding:1px 7px; margin-right:8px; border-radius:99px; background:var(--cam); color:#fff; font-size:14px; text-align:center; }
   .chi-tiet { margin:0 0 8px 24px; padding:8px 10px; background:#faf3e8; border-radius:10px; font-size:14px; line-height:1.6; }
@@ -447,33 +449,50 @@ function veChiTiet(p) {
           : `<button class="nut cam" data-setup="${p.id}" data-co="1">✓ Đã setup</button>`}
         <button class="nut ${p.uu_tien ? 'tim' : 'xam'}" data-uu="${p.id}" data-co="${p.uu_tien ? 0 : 1}">${p.uu_tien ? '⚡ ƯU TIÊN ✕' : '⚡ Ưu tiên'}</button>
         <button class="nut ${ghim ? '' : 'xam'}" data-ghim="${p.id}">${ghim ? '📌 Bỏ ghim' : '📌 Ghim'}</button></div></div>`;
-  // Món của bàn = tạm tính: gộp theo món, thành tiền ngay bên cạnh, tổng ở cuối (Hieu chốt 20/11, như bản mẫu 16/11)
-  const tong = t.dm.reduce((a, d) => a + d.so_luong * d.don_gia, 0);
-  h += `<div class="the"><h2>🍽 Món của bàn</h2>${veHoSoMon(p, t.ls, t.dm) || '<div class="goi-y">Chưa có món.</div>'}
+  // Món của bàn (Hieu chốt 20/11): 1 chỗ duy nhất để kiểm soát cái gì chưa lên / lên rồi
+  // – nút "+ Khách xin thêm" ở TRÊN ĐẦU (bấm nhanh khi khách gọi), mở ra: đồ miễn phí + đồ ăn kèm, cá (tính tiền)
+  // – danh sách: món (thành tiền bên cạnh) + đồ xin thêm miễn phí (chưa mang / đã mang), chạm dòng → thả xuống chi tiết
+  // – tạm tính ở cuối
+  const tong = t.dm.reduce((a, d) => a + d.so_luong * d.don_gia, 0), moCM = S.moCM === p.id;
+  h += `<div class="the"><h2>🍽 Món của bàn</h2>
+    <button class="nut cam" style="width:100%;margin-bottom:8px;font-size:17px" data-mocm="${p.id}">${moCM ? '▴ Đóng phần khách xin thêm' : '🧺 + Khách xin thêm / cần mang'}</button>
+    ${moCM ? `<div class="them-cm">
+      <h3 style="margin-top:4px">Miễn phí (ghi để mang)</h3>
+      <div class="chips">${GOI_Y_MANG.map(g => `<button class="chip" data-cmthem="${esc(g)}">+ ${esc(g)}</button>`).join('')}</div>
+      <div class="hang-go" style="margin-top:0"><input id="cmgo" data-o="cmGo" maxlength="60" placeholder="Khác / ghi rõ (vd: thêm 2 chén)" value="${esc(S.cmGo)}" autocomplete="off"><button class="nut cam" data-cmgo>Ghi</button></div>
+      <h3>Đồ ăn kèm, cá (tính tiền – lấy mang luôn)</h3>
+      ${DO_TINH_TIEN.map(ma => {
+        const m = S.menu.find(x => x.ma === ma); if (!m) return '';
+        const khoa = monKhoa(m), thieu = thieuThanhPhan(m), n = S.them[ma] || 0;
+        return `<div class="mon ${khoa ? 'het' : ''}"><div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(giaHienTai(m))}</span>${khoa ? ` <span class="tag-het">TẠM HẾT${thieu.length ? ' – hết ' + esc(thieu.join(', ')) : ''}</span>` : ''}</div>
+          ${khoa ? '' : `<div class="sl"><button data-thembot="${ma}" ${n ? '' : 'disabled'}>−</button><span>${n}</span><button data-themthem="${ma}">+</button></div>`}</div>`;
+      }).join('')}
+      ${Object.values(S.them).some(Boolean) ? `<button class="lon" data-themgui="${p.id}">Thêm vào ${esc(tenBan(p))}: ${Object.entries(S.them).filter(([, n]) => n).map(([ma, n]) => n + ' ' + ((S.menu.find(x => x.ma === ma) || {}).ten || ma).toLowerCase()).join(', ')}</button>` : ''}
+    </div>` : ''}
+    ${veCanMang(p)}${veHoSoMon(p, t.ls, t.dm)}${!t.dm.length && !cmCua(p.id).length ? '<div class="goi-y">Chưa có món.</div>' : ''}
     <div class="tinh tong"><span>Tạm tính</span><span>${tien(tong)}</span></div>
     <div class="goi-y">Cộng theo giá lúc gọi. Gộp giá tô chấm 16.000 / combo khi tính tiền (Bài 12).</div>
-    <button class="lon" data-goithem="${p.ma_ban}">+ Gọi thêm món</button></div>`;
-  // Cần mang: 1 mục nhỏ, chạm mới mở danh sách + thêm đồ miễn phí / đồ ăn kèm, cá (tính tiền)
-  const cm = cmCua(p.id), chua = cm.filter(c => !c.xong_luc), roi = cm.filter(c => c.xong_luc).slice(-3).reverse(), moCM = S.moCM === p.id;
-  h += `<div class="the cm"><button class="mo-cm" data-mocm="${p.id}"><span>🧺 Cần mang / khách xin thêm</span>
-      <span>${chua.length ? `<span class="dem-cm">${chua.length}</span>` : ''}${moCM ? '▴' : '▾'}</span></button>
-    ${!moCM ? (chua.length ? `<div class="goi-y" style="margin-top:6px">Chưa mang: ${esc(chua.map(c => c.do_mang).join(' · '))}</div>` : '') : `
-    <div style="margin-top:8px">${chua.length ? chua.map(c => `<div class="dong"><div class="ten"><b>${esc(c.do_mang)}</b>${c.ghi_chu ? ` <span class="ghi">${esc(c.ghi_chu)}</span>` : ''}<br><span class="goi-y">ghi ${gio(c.ghi_luc)} (${phut(c.ghi_luc)}')</span></div>
-      <button class="nut" data-cmxong="${c.id}">✓ Xong</button></div>`).join('') : '<div class="goi-y">Không còn gì cần mang.</div>'}
-    ${roi.length ? `<div class="goi-y" style="margin-top:6px">Vừa mang: ${roi.map(c => `${esc(c.do_mang)} <button class="nut xam nho" data-cmhoan="${c.id}">↩</button>`).join(' ')}</div>` : ''}</div>
-    <h3>+ Miễn phí</h3>
-    <div class="chips">${GOI_Y_MANG.map(g => `<button class="chip" data-cmthem="${esc(g)}">+ ${esc(g)}</button>`).join('')}</div>
-    <div class="hang-go"><input id="cmgo" data-o="cmGo" maxlength="60" placeholder="Khác / ghi rõ (vd: thêm 2 chén)" value="${esc(S.cmGo)}" autocomplete="off"><button class="nut cam" data-cmgo>Ghi</button></div>
-    <h3>+ Đồ ăn kèm, cá (tính tiền – lấy mang luôn)</h3>
-    ${DO_TINH_TIEN.map(ma => {
-      const m = S.menu.find(x => x.ma === ma); if (!m) return '';
-      const khoa = monKhoa(m), thieu = thieuThanhPhan(m), n = S.them[ma] || 0;
-      return `<div class="mon ${khoa ? 'het' : ''}"><div class="ten"><b>${esc(m.ten)}</b><span class="goi-y">${tien(giaHienTai(m))}</span>${khoa ? ` <span class="tag-het">TẠM HẾT${thieu.length ? ' – hết ' + esc(thieu.join(', ')) : ''}</span>` : ''}</div>
-        ${khoa ? '' : `<div class="sl"><button data-thembot="${ma}" ${n ? '' : 'disabled'}>−</button><span>${n}</span><button data-themthem="${ma}">+</button></div>`}</div>`;
-    }).join('')}
-    ${Object.values(S.them).some(Boolean) ? `<button class="lon" data-themgui="${p.id}">Thêm vào ${esc(tenBan(p))}: ${Object.entries(S.them).filter(([, n]) => n).map(([ma, n]) => n + ' ' + ((S.menu.find(x => x.ma === ma) || {}).ten || ma).toLowerCase()).join(', ')}</button>` : ''}`}</div>
+    <button class="lon" data-goithem="${p.ma_ban}">+ Gọi thêm món</button></div>
     <button class="nut ${xn ? 'do' : 'xam'}" style="width:100%;margin-bottom:12px" data-khachve="${p.id}">${xn ? 'Chạm lần nữa để đóng bàn' : 'Khách về (tạm – tới Bài 12 mới tính tiền)'}</button>`;
   return h;
+}
+// Đồ khách xin thêm (miễn phí) nằm chung danh sách Món của bàn: gộp cùng tên, chưa mang lên trước,
+// nút "✓ Xong – đã mang"; chạm dòng → thả xuống từng lần ghi (giờ ghi, đã mang lúc mấy giờ, ↩ hoàn tác)
+function veCanMang(p) {
+  const nhom = [];
+  cmCua(p.id).forEach(c => { let g = nhom.find(x => x.k === c.do_mang); if (!g) nhom.push(g = { k: c.do_mang, ds: [] }); g.ds.push(c); });
+  nhom.sort((a, b) => (b.ds.some(c => !c.xong_luc) ? 1 : 0) - (a.ds.some(c => !c.xong_luc) ? 1 : 0));
+  return nhom.map(g => {
+    const chua = g.ds.filter(c => !c.xong_luc), roi = g.ds.filter(c => c.xong_luc);
+    const khoa = p.id + '|cm|' + g.k, mo = S.mo.has(khoa), icon = /^\p{Extended_Pictographic}/u.test(g.k) ? '' : '🧺 ';
+    const chiTiet = !mo ? '' : `<div class="chi-tiet">${g.ds.map(c => `<div>${c.xong_luc ? '✓' : '🧺'} ghi ${gio(c.ghi_luc)}${c.ghi_chu ? ' · ' + esc(c.ghi_chu) : ''} —
+      ${c.xong_luc ? `đã mang ${gio(c.xong_luc)} <button class="nut xam nho" data-cmhoan="${c.id}">↩</button>` : `<b>chưa mang</b> (${phut(c.ghi_luc)}')`}</div>`).join('')}</div>`;
+    return `<div class="hang-mon ${chua.length ? 'cm-chua' : ''}"><button class="mo-mon" data-mo="${esc(khoa)}"><span>${mo ? '▾' : '▸'}</span>
+        <span class="ten"><b>${g.ds.length}</b>${icon}${esc(g.k)}<br><span class="goi-y">${[roi.length ? `✓ ${roi.length} đã mang` : '', chua.length ? `🧺 ${chua.length} chưa mang` : ''].filter(Boolean).join(' · ')}</span></span>
+        <span class="tien-mon"><small>miễn phí</small></span></button>
+      ${chua.length ? `<div class="nut-hang"><button class="nut nho" data-cmxong="${chua.map(c => c.id).join(',')}">✓ Xong – đã mang ${chua.length}</button></div>` : ''}
+      ${chiTiet}</div>`;
+  }).join('');
 }
 // Món của bàn: gộp cùng món (cùng loại xèo) qua mọi lượt + mọi phần tách "Xong 1" → 1 dòng: số phần, tên, ghi chú nhỏ tình trạng,
 // thành tiền ở bên phải. Chạm dòng → thả xuống từng lượt gọi. Đồ phục vụ tự lấy (cá kho, topping) chưa mang → nút "✓ Xong" ngay dưới.
@@ -724,7 +743,11 @@ document.addEventListener('click', async (e) => {
     const chu = (S.cmGo || '').trim(); if (!chu) return bao('Gõ đồ cần mang trước.');
     const r = await rpc('them_can_mang', { p_phien: S.banMo, p_do: chu, p_ghi_chu: null }); if (r && r.kq === 'ok') { S.cmGo = ''; bao('🧺 Đã ghi: ' + chu); ve.cu = null; ve(); } return;
   }
-  if (d.cmxong) return rpc('xong_can_mang', { p_id: +d.cmxong, p_xong: true });
+  if (d.cmxong) {   // 1 hoặc nhiều dòng cần mang cùng lúc
+    const ids = d.cmxong.split(',').map(Number); S.vuaBam = Date.now();
+    for (const id of ids) { const { data } = await sb.rpc('xong_can_mang', { p_id: id, p_xong: true }); if (data && data.kq !== 'ok') { bao(KQ[data.kq] || data.kq); break; } }
+    return tai();
+  }
   if (d.cmhoan) return rpc('xong_can_mang', { p_id: +d.cmhoan, p_xong: false });
   if (d.xong) return rpc('xong_mon', { p_id: +d.xong, p_so: d.so ? +d.so : null });
   if (d.tru) return rpc('tra_lai_xong', { p_id: +d.tru, p_so: 1, p_lam_lai: false });
