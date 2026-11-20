@@ -416,7 +416,6 @@ function veTong() {
     const ghim = S.ghim.includes(p.id);
     return `<div class="ban ${p.uu_tien ? 'uu' : ''}">
       <div class="dau">${S.xep === 'cho_mon' ? `<span class="so">#${i + 1}</span>` : ''}<span class="ten">${esc(tenBan(p))}</span>
-        ${t.cuoi ? `<span class="tag ${t.cuoi.lan === 1 ? '' : 'them'}">${t.cuoi.lan === 1 ? 'đơn mới' : 'gọi thêm'}</span>` : ''}
         <span class="phai2"><button class="${p.uu_tien ? 'bat' : ''}" data-uu="${p.id}" data-co="${p.uu_tien ? 0 : 1}" aria-label="Ưu tiên">⚡</button>
           <button class="${ghim ? 'ghim-bat' : ''}" data-ghim="${p.id}" aria-label="Ghim">📌</button></span></div>
       <div class="dong-gio">🕐 vào ${gio(p.mo_luc)} (${phut(p.mo_luc)}')${t.cuoi ? ` · gọi cuối ${gio(t.cuoi.goi_luc)} (${phut(t.cuoi.goi_luc)}')` : ''}
@@ -494,7 +493,8 @@ function veHoSoMon(p, ls, dm) {
     const pvCho = g.ds.filter(d => d.tram === 'phuc_vu' && d.trang_thai === 'moi');
     const chiTiet = !mo ? '' : `<div class="chi-tiet">${ls.filter(l => g.ds.some(d => d.luot_id === l.id)).map(l => {
       const cua = g.ds.filter(d => d.luot_id === l.id), tl = demTT(cua), gc = [...new Set(cua.map(d => d.ghi_chu).filter(Boolean))];
-      return `<div>Lượt ${l.lan} · ${gio(l.goi_luc)} — <b>${tl.len + tl.cho + tl.lam} phần</b>: ${chuTT(tl)}${gc.length ? ` <span class="ghi">📝 ${esc(gc.join('; '))}</span>` : ''}</div>`;
+      // Nhãn trong chi tiết món: lần gọi đầu của bàn = Đơn mới, các lần sau = Gọi thêm (Hieu chốt 20/11)
+      return `<div><span class="tag ${l.lan === 1 ? '' : 'them'}">${l.lan === 1 ? 'Đơn mới' : 'Gọi thêm'}</span> ${gio(l.goi_luc)} — <b>${tl.len + tl.cho + tl.lam} phần</b>: ${chuTT(tl)}${gc.length ? ` <span class="ghi">📝 ${esc(gc.join('; '))}</span>` : ''}</div>`;
     }).join('')}</div>`;
     return `<div class="hang-mon"><button class="mo-mon" data-mo="${esc(khoa)}"><span>${mo ? '▾' : '▸'}</span>
         <span class="ten"><b>${tong}</b>${esc(tenDong(g.d))}<br><span class="goi-y">${t.len === tong ? '🍽 đã lên đủ' : g.d.tram === 'phuc_vu'
