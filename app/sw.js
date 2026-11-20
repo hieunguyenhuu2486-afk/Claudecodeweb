@@ -1,7 +1,7 @@
 // Service worker = "người giữ kho nhỏ" trong điện thoại.
 // Việc duy nhất: cất sẵn vỏ app (giao diện, biểu tượng, thư viện) để mất mạng vẫn mở được app.
 // KHÔNG cất đơn hàng – đơn luôn lấy trực tiếp từ kho Supabase.
-const BAN = 'quan-bay-v0.3';   // v0.3 (20/11, Bài 8): trang mở nhanh thay app tập dượt
+const BAN = 'quan-bay-v0.4';   // v0.3 (20/11, Bài 8): trang mở nhanh thay app tập dượt · v0.4 (Bài 9): nút Màn phục vụ
 const VO_APP = [
   './',
   'index.html',

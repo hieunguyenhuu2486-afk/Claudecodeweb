@@ -16,7 +16,7 @@
   ],
   "shortcuts": [
     { "name": "Màn bếp", "url": "../bai8-man-bep.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
-    { "name": "Đơn món", "url": "../bai7-don-mon.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Màn phục vụ", "url": "../bai9-phuc-vu.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "Fill đồ", "url": "../bai6-fill-do.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
     { "name": "Vào ca", "url": "../bai6-vao-ca.html", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
