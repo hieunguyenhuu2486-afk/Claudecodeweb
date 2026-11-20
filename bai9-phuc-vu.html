@@ -584,9 +584,9 @@ function veLichSu() {
     const l = luotCua(d.luot_id);
     return `<div class="dong"><div class="ten"><b>${esc(tenBan(phienCua(d.phien_id)))}</b> · <b>${d.so_luong}</b>${esc(tenDong(d))}
         <br><span class="goi-y">🍽 lên ${gio(d.len_luc)}${d.xong_luc && !laCa ? ' · xong ' + gio(d.xong_luc) : ''}${l ? ' · gọi ' + gio(l.goi_luc) : ''}</span></div>
-      <button class="nut xam nho" data-hoanlen="${d.id}">↩ Hoàn tác</button></div>`;
+      <button class="nut do nho" data-vebep="${d.id}">↩ Hoàn tác${d.so_luong > 1 ? ' 1' : ''}</button></div>`;
   }).join('')}</div>` : `<div class="the tt">${QUAY_TEN[tram]}: chưa có món nào lên bàn (các bàn đang ăn).</div>`;
-  return h + `<div class="goi-y" style="text-align:center">Mới nhất ở trên. Bấm nhầm "Đã lên bàn" thì ↩ Hoàn tác – món quay lại Chờ mang.</div>`;
+  return h + `<div class="goi-y" style="text-align:center">Mới nhất ở trên. ↩ Hoàn tác = trả 1 phần ${laCa ? 'về "chưa mang"' : 'VỀ BẾP: lên đầu hàng, nhãn "↩ LÀM LẠI – ƯU TIÊN", máy bếp kêu lại'}.</div>`;
 }
 
 // ===== Gọi món (đơn mới / gọi thêm) =====
@@ -776,6 +776,10 @@ document.addEventListener('click', async (e) => {
   if (d.hoantac) return rpc('tra_lai_xong', { p_id: +d.hoantac, p_so: 1, p_lam_lai: true });
   if (d.len) { const r = await rpc('da_len_ban', { p_ids: d.len.split(',').map(Number) }); if (r && r.kq === 'ok') bao('🍽 Xong'); return; }
   if (d.hoanlen) return rpc('hoan_tac_len', { p_id: +d.hoanlen });
+  if (d.vebep) {   // Hoàn tác ở Lịch sử: trả VỀ BẾP (đặc tả mục 7), cá / đồ ăn kèm thì về "chưa mang"
+    const r = await rpc('tra_ve_bep', { p_id: +d.vebep, p_so: 1 });
+    if (r && r.kq === 'ok') bao(r.ve === 'bep' ? '↩ Đã trả về bếp – làm lại, ưu tiên' : '↩ Đã trả về "chưa mang"'); return;
+  }
   if (d.setup) return rpc('sua_phien', { p_id: +d.setup, p_viec: 'setup', p_co: d.co === '1' });
   if (d.uu) return rpc('sua_phien', { p_id: +d.uu, p_viec: 'uu_tien', p_co: d.co === '1' });
   if (d.khachve) {
