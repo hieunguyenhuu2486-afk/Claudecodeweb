@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b1d0e">
+<title>Màn bếp – Quán Bảy</title>
+<!-- Bài 8: màn bếp thật cho Bếp xèo / Bếp căn / Quầy nước (một trang, tự lọc theo quầy đang vào ca).
+     Dùng lõi Bài 7 trong kho (dong_mon + hàm xong_mon, tra_lai_xong, goi_mon) – trang này KHÔNG thêm bảng/hàm mới.
+     Mục Fill đồ = trang Bài 6.5 nhúng vào (bai6-fill-do.html?nhung=1), chạy ngầm để vẫn kêu/đọc khi đang ở mục khác.
+     Kế hoạch + quyết định: docs/ke-hoach-bai-8.md. Số phút chờ chỉ hiện số, không đổi màu (đặc tả).
+     Chỉ chứa publishable key (được phép công khai). -->
+<style>
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#7a6a58; --vien:#e5d5bf; --vang:#fff3c4;
+          --tren:56px; --duoi:68px; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--nen); color:var(--chu); font-family:system-ui,"Segoe UI",Roboto,sans-serif; }
+  body { padding-bottom:calc(var(--duoi) + 12px + env(safe-area-inset-bottom)); }
+  button { font:inherit; border:0; border-radius:14px; cursor:pointer; }
+  button:disabled { opacity:.45; cursor:default; }
+  a { color:inherit; }
+  /* Thanh trên */
+  header { position:sticky; top:0; z-index:20; background:var(--chu); color:#fff; }
+  .tren { height:var(--tren); padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  #tieu { font-size:22px; font-weight:900; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .phai { display:flex; align-items:center; gap:10px; font-size:14px; white-space:nowrap; }
+  #dongho { font-size:20px; font-weight:800; }
+  #ketnoi { font-size:13px; color:#cfc; }
+  #mat { display:none; background:var(--do); color:#fff; font-weight:800; font-size:17px; padding:10px 14px; text-align:center; }
+  #mat.hien { display:block; }
+  /* Dải báo fill (máy người nhận) */
+  #daiFill { position:sticky; z-index:15; top:var(--tren); display:none; margin:8px 12px 0; padding:12px 14px; border-radius:14px;
+             background:var(--vang); border:3px solid #f1c40f; font-weight:800; font-size:18px; box-shadow:0 4px 14px rgba(0,0,0,.18); cursor:pointer; }
+  #daiFill.hien { display:block; }
+  #daiFill.do { background:#fde2df; border-color:var(--do); }
+  #daiFill small { display:block; font-size:14px; font-weight:700; margin-top:4px; }
+  main { padding:12px 12px 0; max-width:1300px; margin:0 auto; }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:18px; padding:12px 14px; margin-bottom:12px; }
+  .canh { padding:14px; border-radius:14px; background:#fff1e0; color:#8a4500; font-size:17px; margin-bottom:12px; }
+  .canh.do { background:#fdecea; color:var(--do); }
+  .canh a, .canh button { font-weight:800; }
+  .loi { margin-top:12px; padding:12px; border-radius:10px; background:#fdecea; color:var(--do); font-weight:700; }
+  .goi-y { font-size:14px; color:var(--xam); }
+  .tt { text-align:center; color:var(--xam); padding:30px 0; font-size:17px; }
+  .trong { text-align:center; color:var(--xanh); font-size:26px; font-weight:900; padding:50px 10px; }
+  .trong small { display:block; font-size:16px; color:var(--xam); font-weight:600; margin-top:8px; }
+  .lon { width:100%; padding:18px; font-size:20px; font-weight:900; background:var(--xanh); color:#fff; margin-top:10px; }
+  .lon.cam { background:var(--cam); }
+  label { display:block; font-weight:800; margin:12px 0 6px; font-size:16px; }
+  input { width:100%; font-size:18px; padding:12px; border:2px solid var(--vien); border-radius:12px; font-family:inherit; }
+  /* Thẻ bếp: 1 thẻ = 1 lượt gọi của 1 bàn. Dọc 1 cột, ngang / máy rộng tự chia 2–3 cột */
+  .luoi-the { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap:12px; align-items:start; }
+  .bep { background:#fff; border:2px solid var(--vien); border-left:10px solid var(--cam); border-radius:18px; padding:10px 12px 6px; }
+  .bep.lai { border-color:var(--do); background:#fff5f4; }
+  .dau-the { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding-bottom:6px; }
+  .so-ban { font-size:32px; font-weight:900; line-height:1; }
+  .ten-phu { font-size:20px; font-weight:800; }
+  .tag { font-size:15px; font-weight:900; padding:4px 10px; border-radius:8px; color:#fff; background:var(--xanh); white-space:nowrap; }
+  .tag.them { background:var(--cam); }
+  .tag.lai { background:var(--do); font-size:17px; }
+  .gio { margin-left:auto; font-size:18px; font-weight:800; color:var(--xam); white-space:nowrap; }
+  .gio b { color:var(--chu); font-size:22px; }
+  .ghi { display:inline-block; margin-top:4px; background:var(--vang); padding:3px 10px; border-radius:8px; font-size:17px; font-weight:700; }
+  .dong { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 0; border-top:2px solid #f1e6d6; }
+  .dong .ten { flex:1 1 170px; font-size:22px; font-weight:700; line-height:1.25; }
+  .dong .ten .sl { display:inline-block; min-width:44px; font-size:30px; font-weight:900; margin-right:4px; }
+  .con { font-size:15px; font-weight:900; color:#fff; background:var(--cam); padding:2px 8px; border-radius:8px; vertical-align:middle; }
+  .nut-hang { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:8px; margin-left:auto; }
+  .nut { min-height:56px; padding:10px 16px; font-size:19px; font-weight:900; color:#fff; background:var(--xanh); white-space:nowrap; }
+  .nut.vien { background:#fff; color:var(--xanh); border:3px solid var(--xanh); }
+  .nut.do { background:var(--do); }
+  .nut.xam { background:#eee; color:var(--chu); }
+  .nut.nho { min-height:46px; font-size:16px; padding:8px 12px; }
+  .da-xong { display:inline-flex; align-items:center; gap:8px; font-size:17px; font-weight:900; color:var(--xanh); background:#e8f6ee; padding:4px 4px 4px 12px; border-radius:12px; }
+  .tru { width:48px; height:48px; font-size:28px; font-weight:900; line-height:1; background:#fff; color:var(--do); border:3px solid var(--do); border-radius:12px; }
+  .da-len { font-size:15px; color:var(--xam); font-weight:700; }
+  /* Lịch sử */
+  .ls .dong .ten { flex:1 1 220px; font-size:19px; }
+  /* Quản lý chọn quầy để xem */
+  .chon-quay { display:flex; gap:8px; margin-bottom:12px; }
+  .chon-quay button { flex:1; padding:14px 6px; font-size:17px; font-weight:900; background:#eee; color:var(--chu); }
+  .chon-quay button.chon { background:var(--chu); color:#fff; }
+  .lien-ket { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 18px; padding:18px 0 8px; font-size:16px; }
+  .lien-ket a, .lien-ket button { color:var(--xam); background:none; text-decoration:underline; padding:6px; }
+  /* Gọi nước (máy quầy nước) */
+  .ban-luoi { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  .ban-luoi button { padding:14px 0; font-size:19px; font-weight:900; background:#fff; color:var(--chu); border:2px solid var(--vien); }
+  .ban-luoi button.co { background:#fdebd0; border-color:var(--cam); }
+  .ban-luoi button.chon { background:var(--chu); color:#fff; border-color:var(--chu); }
+  .mon { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:2px solid #f1e6d6; }
+  .mon .ten { flex:1; font-size:19px; font-weight:800; }
+  .mon.het .ten { color:var(--xam); text-decoration:line-through; }
+  .tag-het { font-size:13px; font-weight:900; color:#fff; background:var(--do); padding:2px 8px; border-radius:6px; text-decoration:none; display:inline-block; }
+  .sl-hang { display:flex; align-items:center; gap:6px; }
+  .sl-hang button { width:52px; height:52px; font-size:26px; font-weight:900; background:#eee; color:var(--chu); }
+  .sl-hang span { min-width:30px; text-align:center; font-weight:900; font-size:22px; }
+  .gio-dong input { margin-top:6px; font-size:16px; padding:10px; }
+  .tong { display:flex; justify-content:space-between; font-weight:900; font-size:19px; padding-top:12px; }
+  /* Mục Fill đồ = trang 6.5 nhúng, luôn chạy ngầm */
+  #khungFill { position:fixed; left:0; top:var(--tren); width:100%; height:calc(100vh - var(--tren) - var(--duoi)); border:0; background:var(--nen); z-index:10; display:none; }
+  body.mo-fill #khungFill { display:block; }
+  body.mo-fill main, body.mo-fill #daiFill { display:none; }
+  /* Thanh dưới */
+  nav { position:fixed; left:0; right:0; bottom:0; z-index:30; height:calc(var(--duoi) + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom);
+        background:#fff; border-top:2px solid var(--vien); display:flex; }
+  nav button { flex:1; background:none; border-radius:0; font-size:17px; font-weight:900; color:var(--xam); position:relative; padding:4px 2px; line-height:1.15; }
+  nav button span.i { display:block; font-size:24px; }
+  nav button.chon { color:var(--chu); background:#f6ead8; box-shadow:inset 0 4px 0 var(--cam); }
+  .dem { position:absolute; top:4px; left:calc(50% + 10px); min-width:26px; height:26px; padding:0 7px; border-radius:99px; background:var(--do); color:#fff; font-size:15px; line-height:26px; }
+  .dem.cam { background:var(--cam); }
+  .dem.xanh { background:var(--xanh); }
+  .bao { position:fixed; left:12px; right:12px; bottom:calc(var(--duoi) + 12px + env(safe-area-inset-bottom)); background:#222; color:#fff; padding:16px; border-radius:14px; font-size:17px; font-weight:700; z-index:40; display:none; }
+  /* Xoay ngang trên điện thoại (màn thấp): thu thanh trên/dưới để dành chỗ cho thẻ */
+  @media (orientation: landscape) and (max-height: 520px) {
+    :root { --tren:44px; --duoi:54px; }
+    #tieu { font-size:19px; } #dongho { font-size:17px; }
+    nav button { font-size:15px; } nav button span.i { display:inline; font-size:18px; margin-right:4px; }
+    nav .dem { position:static; display:inline-block; margin-left:6px; height:24px; line-height:24px; }
+    .so-ban { font-size:28px; } .dong .ten { font-size:20px; } .dong .ten .sl { font-size:26px; min-width:38px; }
+    .nut { min-height:50px; font-size:17px; padding:8px 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="tren"><div id="tieu">Màn bếp</div><div class="phai"><span id="ketnoi"></span><span id="dongho"></span></div></div>
+  <div id="mat">⚠ Mất kết nối – món mới chưa về được. Xem lại khi có mạng.</div>
+</header>
+<div id="daiFill" role="button"></div>
+<main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
+<iframe id="khungFill" title="Fill đồ"></iframe>
+<nav id="nav"></nav>
+<div class="bao" id="bao"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
+<script>
+const URL_KHO = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
+const KHOA_CONG_KHAI = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
+const DUOI_EMAIL = '@nv.banhcanbanhxeobay.id.vn';
+const BEP = { xeo: '🔥 BẾP XÈO', can: '🥘 BẾP CĂN', nuoc: '🥤 QUẦY NƯỚC' };
+const VAI_TRO = { phuc_vu: 'Phục vụ', xeo: 'Bếp xèo', can: 'Bếp căn', nuoc: 'Quầy nước', quan_ly: 'Quản lý' };
+const KQ = {
+  chua_vao_ca: 'Bạn chưa vào ca (hoặc mất kết nối quá 10 phút). Vào ca trước.',
+  khong_duoc_phep: 'Vị trí của bạn không được bấm việc này.',
+  du_lieu_sai: 'Dữ liệu chưa đúng, kiểm tra lại.', ban_sai: 'Bàn không đúng.',
+  thieu_ten_ban_phu: 'Bàn phụ phải ghi tên (vd: ngoài cửa).', mon_sai: 'Có món không còn trong thực đơn.',
+  da_doi: 'Máy khác vừa bấm rồi – đã cập nhật.', da_dong: 'Bàn này đã đóng.', khong_co: 'Không tìm thấy (đã đổi).',
+  da_len: 'Phần này đã lên bàn – phục vụ hoàn tác "Đã lên bàn" trước.',
+};
+
+const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
+const man = document.getElementById('man'), navEl = document.getElementById('nav'), khung = document.getElementById('khungFill');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const tien = (n) => Number(n).toLocaleString('vi-VN') + 'đ';
+const gio = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+const phut = (ts) => Math.max(0, Math.floor((Date.now() - new Date(ts)) / 60000));
+const luuDoc = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const luuGhi = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const MAY = luuDoc('quanbay-may');   // mã máy do trang Vào ca tạo
+const ngayVN = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+const hetHomNay = (luc) => !!luc && ngayVN(luc) === ngayVN(Date.now());
+function bao(chu, ms = 3500) { const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms); }
+
+const S = { user: null, nv: null, ql: false, ca: null, nhipKq: null, xem: luuDoc('quanbay-bep-xem') || 'xeo',
+  menu: [], ban: [], phien: [], luot: [], dong: [], tab: 'don', amBat: false, ketNoi: null,
+  fill: null, gio: [], banChon: null, tenPhu: '', ghiChu: '', truoc: null, dangBam: false, cho: false, cham: false };
+
+// ---------- quầy của màn này ----------
+const caBep = () => !!S.ca && !!BEP[S.ca.vai_tro];
+// Bếp/quầy nước: theo ca. Hieu (quản lý) chưa vào ca bếp: tự chọn quầy để xem.
+const tramToi = () => caBep() ? S.ca.vai_tro : (S.ql ? S.xem : null);
+const coFill = () => caBep() || S.ql;
+const coGoiNuoc = () => tramToi() === 'nuoc';
+function cacTab() {
+  if (!tramToi()) return [];
+  return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : [])];
+}
+const TAB = { don: ['🧾', 'Đơn món'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'] };
+
+// ---------- tiện ích dữ liệu ----------
+const goc = (d) => d.goc_id ?? d.id;
+const phienCua = (id) => S.phien.find(p => p.id === id);
+const luotCua = (id) => S.luot.find(l => l.id === id);
+// Bếp căn chỉ làm bánh: combo hay đĩa lẻ đều là "Căn truyền thống / Căn trứng" (đã duyệt 16/11)
+function tenBep(d) {
+  if (d.ma_mon === 'xeo') return 'Xèo ' + (d.loai || 'thập cẩm');
+  if (d.ma_mon === 'xeo_chay') return 'Xèo chay';
+  if (d.ma_mon === 'can_tt' || d.ma_mon === 'can_tt_le') return 'Căn truyền thống';
+  if (d.ma_mon === 'can_trung' || d.ma_mon === 'can_trung_le') return 'Căn trứng';
+  return String(d.ten_mon || '').replace(/\s*\(hết[^)]*\)\s*$/, '');
+}
+const tenBanChu = (p) => !p ? '?' : p.ma_ban.startsWith('P') ? (p.ten_ban_phu || p.ma_ban) : 'Bàn ' + p.ma_ban;
+const nhanBan = (p) => !p ? '<span class="so-ban">?</span>'
+  : p.ma_ban.startsWith('P') ? `<span class="so-ban">${esc(p.ma_ban)}</span><span class="ten-phu">${esc(p.ten_ban_phu || 'bàn phụ')}</span>`
+  : `<span class="so-ban">BÀN ${esc(p.ma_ban)}</span>`;
+
+// ---------- âm báo + giữ màn sáng ----------
+let AC = null;
+function batAm() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch (e) {} }
+function tieng(tan, bd, dai, to = 0.4) {
+  if (!AC) return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'square'; o.frequency.value = tan; o.connect(g); g.connect(AC.destination);
+  const t = AC.currentTime + bd; g.gain.setValueAtTime(to, t); g.gain.exponentialRampToValueAtTime(0.001, t + dai);
+  o.start(t); o.stop(t + dai + 0.02);
+}
+// Chuông bếp: 3 tiếng gắt + rung dài (khác hẳn tiếng fill "ting-tong" mềm)
+function chuongBep() { batAm(); [0, 0.3, 0.6].forEach(b => tieng(1400, b, 0.22)); try { navigator.vibrate && navigator.vibrate([500, 150, 500, 150, 500]); } catch (e) {} }
+let khoaMan = null;
+async function giuMan() {
+  try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !khoaMan) { khoaMan = await navigator.wakeLock.request('screen'); khoaMan.onrelease = () => { khoaMan = null; }; } } catch (e) {}
+}
+async function batDauCa() {
+  batAm(); S.amBat = true; await giuMan(); chuongBep();
+  // Máy nhận fill (mẹ): bật luôn giọng đọc của mục Fill đồ – một nút cho cả hai
+  try { const w = khung.contentWindow; if (S.fill && S.fill.canNghe && !S.fill.nghe && w && w.batDauNghe) w.batDauNghe(); } catch (e) {}
+  bao('🔔 Đã bật chuông + giữ màn hình sáng'); ve();
+}
+
+// ---------- đăng nhập ----------
+function veDangNhap(loi) {
+  ve.cu = null; veNav();
+  man.innerHTML = `<form class="the" id="form" style="max-width:480px;margin:0 auto"><h2>Đăng nhập</h2>
+    <label for="ten">Tên đăng nhập</label><input id="ten" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="vd: lan">
+    <label for="mk">Mật khẩu</label><input id="mk" type="password" autocomplete="current-password">
+    <button class="lon" id="nut">Đăng nhập</button>${loi ? `<div class="loi">${esc(loi)}</div>` : ''}</form>`;
+  document.getElementById('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const ten = document.getElementById('ten').value.trim().toLowerCase(), mk = document.getElementById('mk').value;
+    if (!/^[a-z0-9_]{2,20}$/.test(ten) || !mk) return veDangNhap('Nhập đúng tên đăng nhập và mật khẩu.');
+    document.getElementById('nut').disabled = true;
+    const { data, error } = await sb.auth.signInWithPassword({ email: ten + DUOI_EMAIL, password: mk });
+    if (error) return veDangNhap((error.message || '').toLowerCase().includes('invalid login') ? 'Sai tên đăng nhập hoặc mật khẩu.' : 'Không đăng nhập được: ' + error.message);
+    batDau(data.user);
+  };
+}
+async function batDau(user) {
+  S.user = user;
+  const { data: nv } = await sb.from('nhan_vien').select('ten_hien_thi, dang_lam, vai_tro_duoc_phep').eq('id', user.id).maybeSingle();
+  if (!nv || !nv.dang_lam) { man.innerHTML = `<div class="the"><div class="loi">Tài khoản chưa có vai trò hoặc đã khóa. Báo Hieu.</div></div>`; return; }
+  S.nv = nv; S.ql = (nv.vai_tro_duoc_phep || []).includes('quan_ly');
+  await nhip();
+  langNghe();
+  await tai();
+}
+// Báo "còn đây" + biết ca có đang giữ ở đúng máy này không
+async function nhip() {
+  if (!S.user) return;
+  if (!MAY) { S.nhipKq = 'chua_co_may'; return; }
+  const { data } = await sb.rpc('nhip', { p_may: MAY });
+  if (data && data.kq) S.nhipKq = data.kq;
+}
+
+// ---------- tải dữ liệu ----------
+async function tai() {
+  if (!S.user) return;
+  const [c, m, b, p] = await Promise.all([
+    sb.from('vao_ca').select('vai_tro, nhip_cuoi, may').eq('nhan_vien_id', S.user.id).is('roi_luc', null).maybeSingle(),
+    sb.from('thuc_don').select('ma, ten, nhom, tram, gia, don_vi, thu_tu, tam_het_luc').eq('dang_ban', true).eq('tram', 'nuoc').order('thu_tu'),
+    sb.from('ban').select('ma, loai, thu_tu').order('thu_tu'),
+    sb.from('phien_ban').select('id, ma_ban, ten_ban_phu, trang_thai, mo_luc').eq('trang_thai', 'dang_an').order('mo_luc'),
+  ]);
+  if (p.error) { ve.cu = null; man.innerHTML = `<div class="the"><div class="loi">Không đọc được dữ liệu: ${esc(p.error.message)}</div></div>`; return; }
+  S.ca = c.data && c.data.nhip_cuoi && Date.now() - new Date(c.data.nhip_cuoi) < 10 * 60000 ? c.data : null;
+  S.menu = m.data || []; S.ban = b.data || []; S.phien = p.data;
+  const tram = tramToi(), ids = S.phien.map(x => x.id);
+  if (tram && ids.length) {
+    const [l, d] = await Promise.all([
+      sb.from('luot_goi').select('id, phien_id, lan, goi_luc, ghi_chu').in('phien_id', ids).order('goi_luc'),
+      sb.from('dong_mon').select('*').in('phien_id', ids).eq('tram', tram).order('id'),
+    ]);
+    S.luot = l.data || []; S.dong = d.data || [];
+  } else { S.luot = []; S.dong = []; }
+  if (!cacTab().includes(S.tab)) S.tab = 'don';
+  napFill();
+  keuNeuCo();
+  ve();
+}
+
+// Món mới / gọi thêm / bị hoàn tác vào quầy mình → chuông bếp (bấm của chính máy này trong 2 giây thì thôi)
+function keuNeuCo() {
+  const tram = tramToi();
+  const moi = new Set(S.dong.filter(d => d.trang_thai === 'moi' && d.tram === tram).map(d => d.id + ':' + d.lam_lai));
+  const tr = S.truoc; S.truoc = { tram, moi };
+  if (!tr || tr.tram !== tram || !S.amBat || Date.now() - (S.vuaBam || 0) < 2000) return;
+  if ([...moi].some(k => !tr.moi.has(k))) chuongBep();
+}
+
+// ---------- vẽ ----------
+const dangGo = () => { const a = document.activeElement; return a && man.contains(a) && a.tagName === 'INPUT'; };
+function ve() {
+  veDau();
+  if (!S.nv) return;
+  veNav(); veDaiFill();
+  if (S.tab === 'fill') return;
+  if (dangGo() || S.cham) { S.cho = true; return; }
+  S.cho = false;
+  const html = veNoi();
+  if (html !== ve.cu) { man.innerHTML = html; ve.cu = html; }
+}
+function veDau() {
+  const t = tramToi();
+  document.getElementById('tieu').textContent = t ? BEP[t] + (caBep() ? '' : ' · xem') : 'Màn bếp';
+  document.getElementById('dongho').textContent = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const mat = !navigator.onLine || (S.ketNoi && S.ketNoi !== 'SUBSCRIBED');
+  document.getElementById('mat').classList.toggle('hien', !!S.user && mat);
+  document.getElementById('ketnoi').textContent = !S.user ? '' : mat ? '○ mất mạng' : '● đã kết nối';
+  canhKhung();
+}
+// Khung Fill đồ nằm giữa thanh trên (cao thêm khi có dải mất mạng) và thanh dưới
+function canhKhung() {
+  const tren = document.querySelector('header').offsetHeight, duoi = navEl.offsetHeight;
+  khung.style.top = tren + 'px';
+  khung.style.height = Math.max(200, window.innerHeight - tren - duoi) + 'px';
+}
+window.addEventListener('resize', canhKhung);
+function veNoi() {
+  const t = tramToi(), lk = `<div class="lien-ket"><a href="bai6-vao-ca.html?ve=man-bep">Đổi vị trí</a><a href="bai6-tam-het.html">Báo món tạm hết</a>${S.ql ? '<a href="bai7-don-mon.html">Đơn món (phục vụ)</a>' : ''}<button data-thoat>Đăng xuất</button></div>`;
+  if (!t) {
+    const pv = S.ca && S.ca.vai_tro === 'phuc_vu';
+    return `<div class="canh">${pv
+      ? `Màn bếp dành cho <b>bếp xèo, bếp căn, quầy nước</b>. Bạn đang ở <b>Phục vụ</b> → <a href="bai7-don-mon.html">🧾 mở Đơn món</a>.`
+      : `Xin chào <b>${esc(S.nv.ten_hien_thi)}</b>. Bạn <b>chưa vào ca</b> (hoặc mất kết nối quá 10 phút).<br><a href="bai6-vao-ca.html?ve=man-bep">→ Vào ca</a> (vào xong tự quay lại đây)`}</div>` + lk;
+  }
+  let h = '';
+  if (caBep() && S.nhipKq && S.nhipKq !== 'ok')
+    h += `<div class="canh do">⚠ Máy này <b>chưa giữ chỗ</b> trong ca (ca đang ở máy khác hoặc mất kết nối) – máy vẫn xem được nhưng có thể bị mất chỗ.
+      <a href="bai6-vao-ca.html?ve=man-bep">→ Vào lại ở máy này</a></div>`;
+  if (!S.amBat)
+    h += `<div class="canh"><b>Đầu ca: chạm nút này 1 lần</b> để máy kêu khi có món mới và giữ màn hình luôn sáng. Cắm sạc, đặt máy cố định.
+      <button class="lon cam" data-batdau>▶ Bắt đầu ca (bật chuông)</button></div>`;
+  if (S.ql && !caBep())
+    h += `<div class="chon-quay">${Object.keys(BEP).map(k => `<button class="${k === t ? 'chon' : ''}" data-xem="${k}">${BEP[k]}</button>`).join('')}</div>`;
+  if (S.tab === 'don') h += veDon(t);
+  else if (S.tab === 'ls') h += veLichSu(t);
+  else if (S.tab === 'goi') h += veGoi();
+  return h + lk;
+}
+function veNav() {
+  const tabs = S.user ? cacTab() : [];
+  if (!tabs.length) { if (veNav.cu !== '') { navEl.innerHTML = ''; navEl.style.display = 'none'; veNav.cu = ''; } return; }
+  const t = tramToi();
+  const dem = (k) => {
+    if (k === 'don') { const n = S.dong.filter(d => d.tram === t && d.trang_thai === 'moi').reduce((a, d) => a + d.so_luong, 0); return n ? `<span class="dem">${n}</span>` : ''; }
+    if (k === 'fill' && S.fill) {
+      if (S.fill.nhan) return `<span class="dem">${S.fill.nhan}</span>`;
+      if (S.fill.cua) return `<span class="dem cam">${S.fill.cua}</span>`;
+    }
+    return '';
+  };
+  const h = tabs.map(k => `<button class="${S.tab === k ? 'chon' : ''}" data-tab="${k}"><span class="i">${TAB[k][0]}</span>${TAB[k][1]}${dem(k)}</button>`).join('');
+  if (h !== veNav.cu) { navEl.innerHTML = h; navEl.style.display = 'flex'; veNav.cu = h; canhKhung(); }
+}
+
+// ----- Đơn món: thẻ theo lượt gọi, cũ ở trên, "làm lại" lên đầu -----
+function veDon(tram) {
+  const cua = S.dong.filter(d => d.tram === tram);
+  const moi = cua.filter(d => d.trang_thai === 'moi');
+  const the = [...new Set(moi.map(d => d.luot_id))]
+    .map(id => ({ l: luotCua(id), ds: moi.filter(d => d.luot_id === id) })).filter(x => x.l)
+    .map(x => ({ ...x, lai: x.ds.some(d => d.lam_lai) }))
+    .sort((a, b) => (b.lai - a.lai) || (new Date(a.l.goi_luc) - new Date(b.l.goi_luc)));
+  if (!the.length) return `<div class="trong">✓ Không có món đang chờ<small>Có món mới máy sẽ kêu.</small></div>`;
+  return `<div class="luoi-the">${the.map(({ l, ds, lai }) => {
+    const p = phienCua(l.phien_id);
+    return `<div class="bep ${lai ? 'lai' : ''}">
+      <div class="dau-the">${nhanBan(p)}<span class="tag ${l.lan === 1 ? '' : 'them'}">${l.lan === 1 ? 'ĐƠN MỚI' : 'GỌI THÊM'}</span>
+        ${lai ? '<span class="tag lai">↩ LÀM LẠI – ƯU TIÊN</span>' : ''}<span class="gio">${gio(l.goi_luc)} · ⌛ <b>${phut(l.goi_luc)}'</b></span></div>
+      ${l.ghi_chu ? `<div class="ghi">📝 ${esc(l.ghi_chu)}</div>` : ''}
+      ${ds.map(r => dongBep(r, cua)).join('')}</div>`;
+  }).join('')}</div>`;
+}
+function dongBep(r, cua) {
+  const ho = cua.filter(d => goc(d) === goc(r) && d.id !== r.id);
+  const daXong = ho.filter(d => d.trang_thai === 'xong'), daLen = ho.filter(d => d.trang_thai === 'da_len');
+  const nX = daXong.reduce((a, d) => a + d.so_luong, 0), nL = daLen.reduce((a, d) => a + d.so_luong, 0);
+  const moiNhat = daXong.slice().sort((a, b) => new Date(b.xong_luc) - new Date(a.xong_luc))[0];
+  return `<div class="dong"><div class="ten"><span class="sl">${r.so_luong + nX + nL}</span>${r.lam_lai ? '<span style="color:var(--do)">↩ </span>' : ''}${esc(tenBep(r))}
+      ${nX + nL ? ` <span class="con">còn ${r.so_luong}</span>` : ''}
+      ${r.ghi_chu ? `<br><span class="ghi">📝 ${esc(r.ghi_chu)}</span>` : ''}</div>
+    <div class="nut-hang">
+      ${nX ? `<span class="da-xong">đã xong ${nX}<button class="tru" data-tru="${moiNhat.id}" aria-label="Bấm nhầm – trả lại 1 phần">−</button></span>` : ''}
+      ${nL ? `<span class="da-len">🍽 đã lên ${nL}</span>` : ''}
+      ${r.so_luong > 1 ? `<button class="nut vien" data-xong="${r.id}" data-so="1">✓ Xong 1</button>` : ''}
+      <button class="nut" data-xong="${r.id}" data-so="">${r.so_luong > 1 ? '✓✓ Xong hết ' + r.so_luong : '✓ Xong'}</button>
+    </div></div>`;
+}
+
+// ----- Lịch sử: món đã xong, mới nhất ở trên -----
+function veLichSu(tram) {
+  const ls = S.dong.filter(d => d.tram === tram && (d.trang_thai === 'xong' || d.trang_thai === 'da_len'))
+    .sort((a, b) => new Date(b.xong_luc) - new Date(a.xong_luc)).slice(0, 60);
+  if (!ls.length) return `<div class="the tt">Chưa có món nào xong (của các bàn đang ăn).</div>`;
+  return `<div class="the ls">${ls.map(d => `<div class="dong">
+      <div class="ten"><b>${esc(tenBanChu(phienCua(d.phien_id)))}</b> · <b>${d.so_luong}</b> ${esc(tenBep(d))}<br><span class="goi-y">xong ${gio(d.xong_luc)}${d.trang_thai === 'da_len' ? ' · 🍽 đã lên bàn ' + gio(d.len_luc) : ' · chờ phục vụ mang'}</span></div>
+      ${d.trang_thai === 'da_len' ? '' : `<button class="nut do nho" data-hoantac="${d.id}">↩ Hoàn tác${d.so_luong > 1 ? ' 1' : ''}</button>`}</div>`).join('')}</div>
+    <div class="goi-y" style="text-align:center">Hoàn tác = món quay lại hàng đợi với nhãn "↩ LÀM LẠI – ƯU TIÊN". Bấm nhầm Xong thì dùng nút "−" ngay trên thẻ.</div>`;
+}
+
+// ----- Gọi nước (máy quầy nước: mẹ nhận order nước trực tiếp – duyệt Bài 7) -----
+function veGoi() {
+  const p = S.banChon ? S.phien.find(x => x.ma_ban === S.banChon) : null;
+  const laPhu = S.banChon && S.banChon.startsWith('P');
+  let h = `<div class="the"><h2 style="margin:0 0 10px">1. Chọn bàn</h2><div class="ban-luoi">${S.ban.map(b => {
+    const co = S.phien.some(x => x.ma_ban === b.ma);
+    return `<button class="${S.banChon === b.ma ? 'chon' : co ? 'co' : ''}" data-ban="${b.ma}">${b.ma}</button>`;
+  }).join('')}</div><div class="goi-y" style="margin-top:6px">Ô cam = bàn đang có khách. P1–P5 = bàn phụ.</div>
+    ${S.banChon ? `<div style="margin-top:8px;font-weight:900;font-size:18px">${p ? '➕ Gọi thêm cho ' + esc(tenBanChu(p)) : '🆕 Đơn mới cho ' + (laPhu ? 'bàn phụ ' + S.banChon : 'Bàn ' + S.banChon)}</div>` : ''}
+    ${laPhu && !p ? `<label for="tenphu">Tên bàn phụ (bắt buộc)</label><input id="tenphu" data-o="tenPhu" maxlength="40" placeholder="vd: ngoài cửa" value="${esc(S.tenPhu)}">` : ''}</div>`;
+  h += `<div class="the"><h2 style="margin:0 0 4px">2. Chọn nước</h2>${S.menu.map(m => {
+    const het = hetHomNay(m.tam_het_luc), n = S.gio.filter(g => g.ma === m.ma).reduce((a, g) => a + g.sl, 0);
+    return `<div class="mon ${het ? 'het' : ''}"><div class="ten">${esc(m.ten)}<br><span class="goi-y">${tien(m.gia)}/${esc(m.don_vi)}</span>${het ? ' <span class="tag-het">TẠM HẾT</span>' : ''}</div>
+      ${het ? '' : `<div class="sl-hang"><button data-bot="${m.ma}" ${n ? '' : 'disabled'}>−</button><span>${n}</span><button data-them="${m.ma}">+</button></div>`}</div>`;
+  }).join('') || '<div class="tt">Chưa có món nước.</div>'}</div>`;
+  const tong = S.gio.reduce((a, g) => a + g.sl * ((S.menu.find(m => m.ma === g.ma) || {}).gia || 0), 0);
+  h += `<div class="the"><h2 style="margin:0 0 4px">3. Kiểm tra & gửi</h2>${S.gio.length ? S.gio.map((g, i) => `<div class="gio-dong" style="padding:8px 0;border-top:2px solid #f1e6d6">
+      <b style="font-size:18px">${g.sl} × ${esc((S.menu.find(m => m.ma === g.ma) || {}).ten || g.ma)}</b>
+      <input data-gc="${i}" maxlength="100" placeholder="Ghi chú (vd: ít đá, ít ngọt)" value="${esc(g.gc || '')}"></div>`).join('') : '<div class="tt">Chưa chọn nước.</div>'}
+    <label for="ghichu">Ghi chú chung</label><input id="ghichu" data-o="ghiChu" maxlength="200" placeholder="không bắt buộc" value="${esc(S.ghiChu)}">
+    <div class="tong"><span>Tạm tính</span><span>${tien(tong)}</span></div>
+    <button class="lon" data-gui ${S.banChon && S.gio.length ? '' : 'disabled'}>Gửi ${S.gio.reduce((a, g) => a + g.sl, 0)} nước</button></div>`;
+  return h;
+}
+function themGio(ma, d) {
+  let g = S.gio.find(x => x.ma === ma);
+  if (!g && d > 0) { g = { ma, sl: 0, gc: '' }; S.gio.push(g); }
+  if (!g) return;
+  g.sl = Math.min(50, g.sl + d);
+  if (g.sl <= 0) S.gio = S.gio.filter(x => x !== g);
+  ve();
+}
+async function gui() {
+  if (!S.banChon || !S.gio.length) return;
+  const mon = S.gio.map(g => ({ ma: g.ma, sl: g.sl, ...(g.gc && g.gc.trim() ? { gc: g.gc.trim() } : {}) }));
+  const ban = S.banChon;
+  const data = await rpc('goi_mon', { p_ban: ban, p_ten_ban_phu: S.tenPhu || null, p_mon: mon, p_ghi_chu: S.ghiChu || null });
+  if (!data) return;
+  if (data.kq === 'tam_het') return bao('⛔ Tạm hết: ' + data.mon.join(', ') + '. Bỏ món đó rồi gửi lại.', 6000);
+  if (data.kq !== 'ok') return;
+  bao(`✅ Đã gửi ${ban.startsWith('P') ? 'bàn phụ' : 'Bàn ' + ban} – ${data.lan === 1 ? 'đơn mới' : 'gọi thêm'}`);
+  S.gio = []; S.ghiChu = ''; S.tenPhu = ''; S.banChon = null; S.tab = 'don';
+  ve(); window.scrollTo(0, 0);
+}
+
+// ---------- gọi hàm trong kho ----------
+async function rpc(ten, thamSo) {
+  if (S.dangBam) return null;
+  S.dangBam = true; S.vuaBam = Date.now();
+  try {
+    const { data, error } = await sb.rpc(ten, thamSo);
+    if (error) { bao(navigator.onLine ? 'Lỗi: ' + error.message : '⚠ Mất mạng – chưa bấm được, thử lại khi có mạng.', 5000); return null; }
+    if (data.kq !== 'ok' && data.kq !== 'tam_het') bao(KQ[data.kq] || data.kq);
+    return data;
+  } finally {
+    S.dangBam = false;
+    await tai();
+  }
+}
+
+// ---------- mục Fill đồ: trang 6.5 nhúng, chạy ngầm ----------
+function napFill() {
+  if (!coFill() || khung.dataset.nap) return;
+  khung.dataset.nap = '1';
+  khung.src = 'bai6-fill-do.html?nhung=1';
+}
+window.addEventListener('message', (e) => {
+  if (e.origin !== location.origin || e.source !== khung.contentWindow || !e.data || !e.data.fill) return;
+  const f = e.data.fill;
+  if (f.bao) { if (S.tab !== 'fill') bao('📣 ' + f.bao, f.ms || 4000); return; }   // câu báo của mục Fill (vd mẹ trả lời) khi đang ở mục khác
+  S.fill = f; veNav(); veDaiFill();
+});
+// Máy nhận fill (mẹ) đang ở mục khác mà có báo chưa nhận → dải to ở trên, chạm là mở Fill đồ
+function veDaiFill() {
+  const el = document.getElementById('daiFill'), f = S.fill;
+  const hien = !!f && f.nhan > 0 && S.tab !== 'fill';
+  el.classList.toggle('hien', hien); el.classList.toggle('do', hien && f.coDo);
+  if (hien) { const h = `${f.coDo ? '🔴' : '🟡'} ${f.nhan} báo fill chưa nhận – chạm để mở<small>${esc(f.chu)}</small>`; if (el.innerHTML !== h) el.innerHTML = h; }
+}
+document.getElementById('daiFill').onclick = () => { batAm(); moTab('fill'); };
+function moTab(t) {
+  S.tab = t; document.body.classList.toggle('mo-fill', t === 'fill');
+  ve.cu = null; ve(); window.scrollTo(0, 0);
+}
+
+// ---------- bấm (một chỗ bắt cho cả trang) ----------
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b || b.disabled || !(man.contains(b) || navEl.contains(b))) return;
+  batAm();
+  const d = b.dataset;
+  if (d.tab) return moTab(d.tab);
+  if ('thoat' in d) { await sb.auth.signOut(); location.reload(); return; }
+  if ('batdau' in d) return batDauCa();
+  if (d.xem) { S.xem = d.xem; luuGhi('quanbay-bep-xem', d.xem); S.truoc = null; S.tab = 'don'; document.body.classList.remove('mo-fill'); return tai(); }
+  if (d.xong) return rpc('xong_mon', { p_id: +d.xong, p_so: d.so ? +d.so : null });
+  if (d.tru) return rpc('tra_lai_xong', { p_id: +d.tru, p_so: 1, p_lam_lai: false });
+  if (d.hoantac) return rpc('tra_lai_xong', { p_id: +d.hoantac, p_so: 1, p_lam_lai: true });
+  if (d.ban) { S.banChon = S.banChon === d.ban ? null : d.ban; ve(); return; }
+  if (d.them || d.bot) return themGio(d.them || d.bot, d.them ? 1 : -1);
+  if ('gui' in d) return gui();
+});
+man.addEventListener('input', (e) => {
+  const o = e.target;
+  if (o.dataset.o) S[o.dataset.o] = o.value;
+  if (o.dataset.gc != null && S.gio[+o.dataset.gc]) S.gio[+o.dataset.gc].gc = o.value;
+});
+man.addEventListener('focusout', () => setTimeout(() => { if (S.cho && !dangGo()) ve(); }, 80));
+// Đang chạm thì không vẽ lại (vẽ lại đúng lúc chạm làm mất cú bấm)
+document.addEventListener('pointerdown', () => { S.cham = true; batAm(); });
+document.addEventListener('pointerup', () => { S.cham = false; if (S.cho) setTimeout(() => { if (S.cho) ve(); }, 250); });
+document.addEventListener('pointercancel', () => { S.cham = false; });
+
+// ---------- giữ chỗ + cập nhật ----------
+setInterval(async () => { const cu = S.nhipKq; await nhip(); if (S.nhipKq !== cu) ve(); }, 60000);
+setInterval(() => { if (S.user) ve(); else veDau(); }, 20000);   // số phút chờ + đồng hồ
+setInterval(() => { if (S.user) tai(); }, 20000);               // dự phòng khi realtime lỡ
+
+let kenh = null, hen = null;
+function langNghe() {
+  if (kenh) return;
+  const doi = () => { clearTimeout(hen); hen = setTimeout(tai, 250); };
+  kenh = sb.channel('man-bep')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'dong_mon' }, doi)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'luot_goi' }, doi)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'phien_ban' }, doi)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'thuc_don' }, doi)
+    .subscribe(st => { const cu = S.ketNoi; S.ketNoi = st; veDau(); if (st === 'SUBSCRIBED' && cu && cu !== 'SUBSCRIBED') tai(); });
+}
+window.addEventListener('offline', veDau);
+window.addEventListener('online', () => { veDau(); if (S.user) { nhip(); tai(); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !S.user) return;
+  if (S.amBat) giuMan();
+  nhip().then(tai);
+});
+
+veDau();
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  session ? batDau(session.user) : veDangNhap();
+})();
+</script>
+</body>
+</html>

@@ -82,6 +82,10 @@
   .bao { position:fixed; left:12px; right:12px; bottom:16px; background:#222; color:#fff; padding:14px; border-radius:12px; font-size:15px; z-index:9; display:none; }
   .phu { width:100%; margin-top:6px; padding:12px; background:none; color:var(--xam); text-decoration:underline; }
   .tt { text-align:center; color:var(--xam); padding:30px 0; }
+  /* Nhúng trong màn bếp Bài 8 (?nhung=1): bỏ thanh tiêu đề, dải nổi dính sát trên */
+  html.nhung header { display:none; }
+  html.nhung #dai { top:0; }
+  html.nhung main { padding-bottom:24px; }
 </style>
 </head>
 <body>
@@ -109,7 +113,14 @@ const MAY = luuDoc('quanbay-may');   // mã máy do trang Vào ca tạo
 const ngayVN = (d) => new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 const homNay = () => ngayVN(Date.now());
 const phutTruoc = (ts) => Math.max(0, Math.floor((Date.now() - Date.parse(ts)) / PHUT));
-function bao(chu, ms = 3500) { const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms); }
+// Bài 8: trang này được nhúng làm mục "Fill đồ" của màn bếp → link mở ở trang ngoài, câu báo hiện ở trang ngoài
+const NHUNG = new URLSearchParams(location.search).has('nhung') && window.parent !== window;
+if (NHUNG) { document.documentElement.classList.add('nhung'); document.head.insertAdjacentHTML('beforeend', '<base target="_top">'); }
+const guiNgoai = (tin) => { if (NHUNG) try { window.parent.postMessage({ fill: tin }, location.origin); } catch (e) {} };
+function bao(chu, ms = 3500) {
+  if (NHUNG) guiNgoai({ bao: chu, ms });
+  const el = document.getElementById('bao'); el.textContent = chu; el.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => el.style.display = 'none', ms);
+}
 
 // ===== Trạng thái =====
 const S = {
@@ -400,6 +411,12 @@ function ve() {
   if (coCa || ql) h += veBaoFill() + veQuayToi() + veGuiMe();
   h += `<button class="phu" id="thoat">Đăng xuất</button>`;
   if (h !== ve.cu) { man.innerHTML = h; ve.cu = h; ganNut(man); traGo(g); }   // chỉ vẽ lại khi có gì đổi (không làm mất cú chạm)
+  if (NHUNG) {   // báo cho màn bếp: chấm đỏ trên mục Fill đồ + dải báo trên máy người nhận
+    const nhan = baoHomNay().filter(b => b.trang_thai === 'moi' && mayNhan(b)).sort(thuTu);
+    guiNgoai({ nhan: nhan.length, chu: nhan.map(chuBao).join(' · '), coDo: nhan.some(b => mucHT(b) === 'het'),
+      cua: S.ca ? baoHomNay().filter(b => cuaQuayToi(b) && dangMo(b)).length : 0,
+      canNghe: laNguoiNhanMe() || laPhucVu(), nghe: S.nghe });
+  }
 }
 // Đang chạm màn hình thì không vẽ lại (vẽ lại đúng lúc chạm làm mất cú bấm)
 let dangCham = false;
