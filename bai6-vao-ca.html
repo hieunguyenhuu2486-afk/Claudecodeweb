@@ -204,7 +204,7 @@ function ve() {
         ${caMayNay() ? '' : `<div class="loi">Máy này chưa giữ chỗ (đang giữ ở máy khác hoặc mất kết nối). Bấm <b>Vào lại ở máy này</b> bên dưới.</div>`}
         ${['xeo', 'can', 'nuoc'].includes(S.ca.vai_tro)
           ? `<a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--xanh);font-size:20px;padding:16px" href="bai8-man-bep.html">🍳 Màn bếp →</a>`
-          : `<a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--xanh)" href="bai7-don-mon.html">🧾 Đơn món →</a>`}
+          : `<a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--xanh);font-size:20px;padding:16px" href="bai9-phuc-vu.html">🛎 Màn phục vụ →</a>`}
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--cam)" href="bai6-fill-do.html">📣 Fill đồ →</a>
         <a class="nut" style="display:block;text-align:center;text-decoration:none;margin-top:10px;background:var(--do)" href="bai6-tam-het.html">⛔ Báo món tạm hết →</a>
         <button class="nut xam" style="width:100%;margin-top:10px" id="roi">Rời vị trí</button></div>`
@@ -230,7 +230,7 @@ function ve() {
 }
 
 // Mở từ trang khác (vd ?ve=tam-het) → vào ca xong tự chuyển về trang đó
-const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'], 'don-mon': ['bai7-don-mon.html', 'Đơn món'], 'man-bep': ['bai8-man-bep.html', 'Màn bếp'] }[new URLSearchParams(location.search).get('ve')];
+const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'], 'don-mon': ['bai7-don-mon.html', 'Đơn món'], 'man-bep': ['bai8-man-bep.html', 'Màn bếp'], 'phuc-vu': ['bai9-phuc-vu.html', 'Màn phục vụ'], 'doi-thoai': ['bai9-doi-thoai.html', 'Đối thoại'] }[new URLSearchParams(location.search).get('ve')];
 const VE = VE_TRANG && VE_TRANG[0];
 function quayVe() { if (!VE) return false; bao('Đã vào ca – đang chuyển sang trang ' + VE_TRANG[1] + '…'); setTimeout(() => location.href = VE, 800); return true; }
 

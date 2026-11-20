@@ -97,9 +97,10 @@
   .gio-dong input { margin-top:6px; font-size:16px; padding:10px; }
   .tong { display:flex; justify-content:space-between; font-weight:900; font-size:19px; padding-top:12px; }
   /* Mục Fill đồ = trang 6.5 nhúng, luôn chạy ngầm */
-  #khungFill { position:fixed; left:0; top:110px; width:100%; height:calc(100vh - 110px); border:0; background:var(--nen); z-index:10; display:none; }
-  body.mo-fill #khungFill { display:block; }
-  body.mo-fill main, body.mo-fill #daiFill { display:none; }
+  /* Mục Fill đồ / Đối thoại = trang nhúng, luôn chạy ngầm để vẫn kêu/đọc khi đang ở mục khác */
+  .khung { position:fixed; left:0; top:110px; width:100%; height:calc(100vh - 110px); border:0; background:var(--nen); z-index:10; display:none; }
+  .khung.hien { display:block; }
+  body.mo-khung main, body.mo-khung #daiFill { display:none; }
   /* Thanh mục: nằm trên đầu, dính theo khi kéo xuống (cùng kiểu màn Phục vụ – Hieu chốt 20/11) */
   nav { display:flex; gap:6px; padding:8px 8px; background:var(--nen); border-bottom:2px solid var(--vien); }
   nav button { flex:1 1 0; min-width:0; min-height:58px; padding:6px 2px; background:#eee; color:var(--chu); font-size:16px; font-weight:900; white-space:nowrap; border-radius:12px; position:relative; line-height:1.2; }
@@ -128,7 +129,8 @@
 </header>
 <div id="daiFill" role="button"></div>
 <main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
-<iframe id="khungFill" title="Fill đồ"></iframe>
+<iframe id="khungFill" class="khung" title="Fill đồ"></iframe>
+<iframe id="khungThoai" class="khung" title="Đối thoại"></iframe>
 <div class="bao" id="bao"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
@@ -148,7 +150,7 @@ const KQ = {
 };
 
 const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
-const man = document.getElementById('man'), navEl = document.getElementById('nav'), khung = document.getElementById('khungFill');
+const man = document.getElementById('man'), navEl = document.getElementById('nav'), khung = document.getElementById('khungFill'), khungThoai = document.getElementById('khungThoai');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tien = (n) => Number(n).toLocaleString('vi-VN') + 'đ';
 const gio = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -169,12 +171,14 @@ const caBep = () => !!S.ca && !!BEP[S.ca.vai_tro];
 // Bếp/quầy nước: theo ca. Hieu (quản lý) chưa vào ca bếp: tự chọn quầy để xem.
 const tramToi = () => caBep() ? S.ca.vai_tro : (S.ql ? S.xem : null);
 const coFill = () => caBep() || S.ql;
+// Đối thoại với phục vụ: chỉ bếp xèo / bếp căn (Hieu chốt 20/11)
+const coThoai = () => ['xeo', 'can'].includes(tramToi()) && (caBep() || S.ql);
 const coGoiNuoc = () => tramToi() === 'nuoc';
 function cacTab() {
   if (!tramToi()) return [];
-  return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : [])];
+  return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : []), ...(coThoai() ? ['thoai'] : [])];
 }
-const TAB = { don: ['🧾', 'Nhận đơn'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'] };
+const TAB = { don: ['🧾', 'Nhận đơn'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'], thoai: ['💬', 'Đối thoại'] };
 
 // ---------- tiện ích dữ liệu ----------
 const goc = (d) => d.goc_id ?? d.id;
@@ -213,6 +217,8 @@ async function batDauCa() {
   batAm(); S.amBat = true; await giuMan(); chuongBep();
   // Máy nhận fill (mẹ): bật luôn giọng đọc của mục Fill đồ – một nút cho cả hai
   try { const w = khung.contentWindow; if (S.fill && S.fill.canNghe && !S.fill.nghe && w && w.batDauNghe) w.batDauNghe(); } catch (e) {}
+  // Bếp: bật luôn tự đọc tin phục vụ nhắn (mục Đối thoại)
+  try { const w = khungThoai.contentWindow; if (S.thoai && S.thoai.canNghe && !S.thoai.nghe && w && w.batDauNghe) w.batDauNghe(); } catch (e) {}
   bao('🔔 Đã bật chuông + giữ màn hình sáng'); ve();
 }
 
@@ -291,7 +297,7 @@ function ve() {
   veDau();
   if (!S.nv) return;
   veNav(); veDaiFill();
-  if (S.tab === 'fill') return;
+  if (S.tab === 'fill' || S.tab === 'thoai') return;
   if (dangGo() || S.cham) { S.cho = true; return; }
   S.cho = false;
   const html = veNoi();
@@ -309,17 +315,16 @@ function veDau() {
 // Khung Fill đồ + dải báo fill nằm ngay dưới thanh trên (thanh trên cao thêm khi có dải mất mạng)
 function canhKhung() {
   const tren = document.querySelector('header').offsetHeight;
-  khung.style.top = tren + 'px';
-  khung.style.height = Math.max(200, window.innerHeight - tren) + 'px';
+  [khung, khungThoai].forEach(k => { k.style.top = tren + 'px'; k.style.height = Math.max(200, window.innerHeight - tren) + 'px'; });
   document.getElementById('daiFill').style.top = (tren + 8) + 'px';
 }
 window.addEventListener('resize', canhKhung);
 function veNoi() {
-  const t = tramToi(), lk = `<div class="lien-ket"><a href="bai6-vao-ca.html?ve=man-bep">Đổi vị trí</a><a href="bai6-tam-het.html">Báo món tạm hết</a>${S.ql ? '<a href="bai7-don-mon.html">Đơn món (phục vụ)</a>' : ''}<button data-thoat>Đăng xuất</button></div>`;
+  const t = tramToi(), lk = `<div class="lien-ket"><a href="bai6-vao-ca.html?ve=man-bep">Đổi vị trí</a><a href="bai6-tam-het.html">Báo món tạm hết</a>${S.ql ? '<a href="bai9-phuc-vu.html">Màn phục vụ</a>' : ''}<button data-thoat>Đăng xuất</button></div>`;
   if (!t) {
     const pv = S.ca && S.ca.vai_tro === 'phuc_vu';
     return `<div class="canh">${pv
-      ? `Màn bếp dành cho <b>bếp xèo, bếp căn, quầy nước</b>. Bạn đang ở <b>Phục vụ</b> → <a href="bai7-don-mon.html">🧾 mở Đơn món</a>.`
+      ? `Màn bếp dành cho <b>bếp xèo, bếp căn, quầy nước</b>. Bạn đang ở <b>Phục vụ</b> → <a href="bai9-phuc-vu.html">🛎 mở Màn phục vụ</a>.`
       : `Xin chào <b>${esc(S.nv.ten_hien_thi)}</b>. Bạn <b>chưa vào ca</b> (hoặc mất kết nối quá 10 phút).<br><a href="bai6-vao-ca.html?ve=man-bep">→ Vào ca</a> (vào xong tự quay lại đây)`}</div>` + lk;
   }
   let h = '';
@@ -346,6 +351,7 @@ function veNav() {
       if (S.fill.nhan) return `<span class="dem">${S.fill.nhan}</span>`;
       if (S.fill.cua) return `<span class="dem cam">${S.fill.cua}</span>`;
     }
+    if (k === 'thoai' && S.thoai && S.thoai.chuaNghe) return `<span class="dem">${S.thoai.chuaNghe}</span>`;
     return '';
   };
   const h = tabs.map(k => `<button class="${S.tab === k ? 'chon' : ''}" data-tab="${k}"><span class="i">${TAB[k][0]}</span>${TAB[k][1]}${dem(k)}</button>`).join('');
@@ -459,15 +465,21 @@ async function rpc(ten, thamSo) {
 
 // ---------- mục Fill đồ: trang 6.5 nhúng, chạy ngầm ----------
 function napFill() {
-  if (!coFill() || khung.dataset.nap) return;
-  khung.dataset.nap = '1';
-  khung.src = 'bai6-fill-do.html?nhung=1';
+  if (coFill() && !khung.dataset.nap) { khung.dataset.nap = '1'; khung.src = 'bai6-fill-do.html?nhung=1'; }
+  if (coThoai() && !khungThoai.dataset.nap) { khungThoai.dataset.nap = '1'; khungThoai.src = 'bai9-doi-thoai.html?nhung=1'; }
 }
 window.addEventListener('message', (e) => {
-  if (e.origin !== location.origin || e.source !== khung.contentWindow || !e.data || !e.data.fill) return;
-  const f = e.data.fill;
-  if (f.bao) { if (S.tab !== 'fill') bao('📣 ' + f.bao, f.ms || 4000); return; }   // câu báo của mục Fill (vd mẹ trả lời) khi đang ở mục khác
-  S.fill = f; veNav(); veDaiFill();
+  if (e.origin !== location.origin || !e.data) return;
+  if (e.source === khung.contentWindow && e.data.fill) {
+    const f = e.data.fill;
+    if (f.bao) { if (S.tab !== 'fill') bao('📣 ' + f.bao, f.ms || 4000); return; }   // câu báo của mục Fill (vd mẹ trả lời) khi đang ở mục khác
+    S.fill = f; veNav(); veDaiFill();
+  }
+  if (e.source === khungThoai.contentWindow && e.data.doiThoai) {
+    const f = e.data.doiThoai;
+    if (f.bao) { if (S.tab !== 'thoai') bao(f.bao, f.ms || 5000); return; }        // phục vụ nhắn: hiện chữ ở mục đang mở
+    S.thoai = f; veNav();
+  }
 });
 // Máy nhận fill (mẹ) đang ở mục khác mà có báo chưa nhận → dải to ở trên, chạm là mở Fill đồ
 function veDaiFill() {
@@ -478,7 +490,10 @@ function veDaiFill() {
 }
 document.getElementById('daiFill').onclick = () => { batAm(); moTab('fill'); };
 function moTab(t) {
-  S.tab = t; document.body.classList.toggle('mo-fill', t === 'fill');
+  S.tab = t;
+  document.body.classList.toggle('mo-khung', t === 'fill' || t === 'thoai');
+  khung.classList.toggle('hien', t === 'fill'); khungThoai.classList.toggle('hien', t === 'thoai');
+  try { const w = khungThoai.contentWindow; if (w && w.daXem) w.daXem(t === 'thoai'); } catch (e) {}
   ve.cu = null; ve(); window.scrollTo(0, 0);
 }
 
@@ -490,7 +505,7 @@ document.addEventListener('click', async (e) => {
   if (d.tab) return moTab(d.tab);
   if ('thoat' in d) { await sb.auth.signOut(); location.reload(); return; }
   if ('batdau' in d) return batDauCa();
-  if (d.xem) { S.xem = d.xem; luuGhi('quanbay-bep-xem', d.xem); S.truoc = null; S.tab = 'don'; document.body.classList.remove('mo-fill'); return tai(); }
+  if (d.xem) { S.xem = d.xem; luuGhi('quanbay-bep-xem', d.xem); S.truoc = null; moTab('don'); return tai(); }
   if (d.xong) return rpc('xong_mon', { p_id: +d.xong, p_so: d.so ? +d.so : null });
   if (d.tru) return rpc('tra_lai_xong', { p_id: +d.tru, p_so: 1, p_lam_lai: false });
   if (d.hoantac) return rpc('tra_lai_xong', { p_id: +d.hoantac, p_so: 1, p_lam_lai: true });
