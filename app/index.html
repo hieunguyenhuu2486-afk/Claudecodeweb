@@ -3,516 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Quán Bảy – Tập dượt</title>
-<!-- PWA tập dượt v0.1 (16/11/2026): vỏ PWA + chức năng Bài 5 trên bảng THỬ don_nuoc_thu. Không phải app thật. -->
+<title>Quán Bảy</title>
+<!-- App Quán Bảy v0.3 (20/11/2026, Bài 8): trang mở nhanh. Thay app tập dượt Bài 5 (bảng thử don_nuoc_thu đã xóa).
+     Các nút mở trang thật ở gốc tên miền (Vào ca, Màn bếp, Đơn món, Fill đồ, Món tạm hết).
+     Bài 15 mới ráp app hoàn chỉnh. Chỉ chứa publishable key (được phép công khai). -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1a1a1a">
+<meta name="theme-color" content="#2b1d0e">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <style>
-  :root { --nen:#fff9e6; --chu:#1a1a1a; --chinh:#c62828; --xanh:#2e7d32; --vang:#f4b400; --xam:#888; --the:#fff; --vien:#e5d5bf; }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background:var(--nen); color:var(--chu); }
-  header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--chu); color:#fff; }
-  header h1 { font-size:18px; margin:0; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #trangthai { font-size:13px; padding:4px 10px; border-radius:99px; background:var(--xam); white-space:nowrap; }
-  #trangthai.ok { background:var(--xanh); } #trangthai.loi { background:var(--chinh); }
-  header button { padding:6px 10px; font-size:14px; background:#333; color:#fff; border-radius:8px; }
-  #nut-nv { background:var(--vang); color:var(--chu); font-weight:700; }
-  .bang-nhac { padding:10px 16px; font-size:15px; text-align:center; }
-  #matmang { background:var(--chinh); color:#fff; font-weight:700; }
-  #caiapp { background:#fff3c4; border-bottom:1px solid var(--vang); }
-  #caiapp button { margin-left:6px; padding:8px 14px; background:var(--chinh); color:#fff; font-weight:700; }
-  main { max-width:560px; margin:0 auto; padding:16px; }
-  button { font:inherit; border:0; border-radius:12px; cursor:pointer; }
-  .to { width:100%; padding:18px; font-size:20px; font-weight:700; color:#fff; background:var(--chinh); margin-bottom:12px; }
-  .to.xanh { background:var(--xanh); }
+  :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#7a6a58; --vien:#e5d5bf; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,"Segoe UI",Roboto,sans-serif; background:var(--nen); color:var(--chu); }
+  header { padding:16px; background:var(--chu); color:#fff; display:flex; align-items:center; gap:12px; }
+  header img { width:44px; height:44px; border-radius:10px; }
+  header h1 { margin:0; font-size:21px; }
+  header small { display:block; font-size:13px; color:#d8c8b4; font-weight:400; }
+  main { max-width:520px; margin:0 auto; padding:16px; }
   .an { display:none !important; }
-  .the { background:var(--the); border:1px solid var(--vien); border-radius:14px; padding:14px; margin-bottom:12px; }
-  label { font-weight:700; display:block; margin-bottom:6px; }
-  input[type=number] { width:100%; font-size:28px; padding:10px; border:2px solid var(--vien); border-radius:10px; }
-  input[type=text] { width:100%; font-size:18px; padding:10px; border:2px solid var(--vien); border-radius:10px; margin-bottom:12px; }
-  .nhan-gc { margin-top:4px; }
-  .nhac { font-size:14px; color:#8a5a00; margin-bottom:6px; }
-  .dong-mon { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-  .dong-mon .ten { flex:1; font-size:18px; font-weight:700; }
-  .dong-mon button { width:52px; height:52px; font-size:28px; font-weight:800; line-height:1; background:#f3e3cc; color:var(--chu); }
-  .dong-mon input { width:68px; height:52px; font-size:24px; font-weight:700; text-align:center; padding:0; border:2px solid var(--vien); border-radius:10px; }
-  .dong-mon.co input { border-color:var(--chinh); background:#fff3e0; }
-  #gio { min-height:28px; margin:10px 0; font-size:18px; }
-  .hang { display:flex; gap:8px; }
-  .hang button { flex:1; }
-  .phu { padding:14px; font-size:16px; background:#ddd; color:var(--chu); }
-  #dodo { font-size:15px; color:var(--xanh); min-height:20px; margin-top:6px; }
-  .don { display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--the); border:2px solid var(--vien); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
-  .don .ban { font-size:26px; font-weight:800; }
-  .don .nd { font-size:20px; }
-  .don .gio { font-size:13px; color:var(--xam); }
-  .don .gc { display:inline-block; margin:4px 0; padding:3px 10px; background:#ffe08a; border-radius:8px; font-size:18px; font-weight:700; }
-  .don button { padding:16px 18px; font-size:18px; font-weight:700; background:var(--xanh); color:#fff; }
-  .don.moi { animation: nhay 0.4s 4 alternate; }
-  @keyframes nhay { to { background:#ffe08a; } }
-  .don.ut { border-color:var(--chinh); background:#fdecea; }
-  .don .nhan-ut { display:inline-block; margin-bottom:4px; padding:2px 8px; background:var(--chinh); color:#fff; border-radius:6px; font-size:14px; font-weight:800; }
-  .don.ls { opacity:.85; }
-  .don button.hoantac { background:#e67e22; font-size:16px; padding:14px 12px; }
-  .tab { display:flex; gap:8px; margin:18px 0 10px; }
-  .tab button { flex:1; padding:12px; font-size:16px; font-weight:700; background:#eee; color:var(--chu); }
-  .tab button.chon { background:var(--chu); color:#fff; }
-  #batam { background:#e67e22; }
-  .trong { color:var(--xam); text-align:center; padding:20px; }
-  #man-chon p { line-height:1.5; }
-  .ghi-thu { font-size:13px; color:var(--xam); text-align:center; margin-top:18px; }
-  /* Bảng nhiệm vụ */
-  #nhiemvu { position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; justify-content:center; }
-  #nhiemvu .hop { width:100%; max-width:560px; max-height:88vh; overflow:auto; background:var(--nen); border-radius:18px 18px 0 0; padding:16px 16px 24px; }
-  #nhiemvu h2 { margin:0 0 4px; font-size:20px; }
-  #tiendo { font-size:14px; color:var(--xam); margin-bottom:12px; }
-  .nv { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; margin-bottom:8px; background:var(--the); border:1px solid var(--vien); border-radius:12px; }
-  .nv .dau { flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--vien); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; }
-  .nv.xong { border-color:var(--xanh); background:#eef7ee; }
-  .nv.xong .dau { background:var(--xanh); border-color:var(--xanh); }
-  .nv b { display:block; font-size:16px; }
-  .nv span { font-size:14px; color:#555; }
-  .nv .tay { margin-top:6px; padding:6px 12px; font-size:14px; background:var(--chu); color:#fff; border-radius:8px; }
-  #nhiemvu .dong { width:100%; margin-top:8px; padding:14px; font-size:17px; font-weight:700; background:var(--chu); color:#fff; }
-  #nhiemvu .lamlai { width:100%; margin-top:8px; padding:10px; font-size:14px; background:transparent; color:var(--xam); }
+  .the { background:#fff; border:1px solid var(--vien); border-radius:16px; padding:14px 16px; margin-bottom:12px; font-size:16px; }
+  .canh { padding:12px 14px; border-radius:12px; background:#fdecea; color:var(--do); font-weight:800; margin-bottom:12px; }
+  .nut { display:flex; align-items:center; gap:14px; width:100%; margin-bottom:12px; padding:18px 16px; border-radius:18px; text-decoration:none;
+         background:#fff; color:var(--chu); border:2px solid var(--vien); font-size:21px; font-weight:900; }
+  .nut .i { font-size:34px; width:44px; text-align:center; }
+  .nut small { display:block; font-size:14px; font-weight:600; color:var(--xam); margin-top:2px; }
+  .nut.goi-y { border-color:var(--xanh); background:#e8f6ee; box-shadow:0 0 0 3px rgba(30,132,73,.25); }
+  .nut.goi-y::after { content:"◀ bấm đây"; margin-left:auto; font-size:13px; color:var(--xanh); white-space:nowrap; }
+  .phu { font-size:15px; color:var(--xam); text-align:center; padding:8px 0 24px; }
+  .phu a { color:var(--xam); }
+  button.cai { padding:10px 14px; border:0; border-radius:12px; background:var(--xanh); color:#fff; font:inherit; font-weight:800; margin-left:8px; }
 </style>
 </head>
 <body>
-<header>
-  <h1 id="tieude">Quán Bảy</h1>
-  <span id="trangthai">Đang kết nối…</span>
-  <button id="nut-doi" class="an" onclick="doiVaiTro()" aria-label="Đổi vai trò">⇄ Đổi</button>
-  <button id="nut-nv" onclick="moNhiemVu()" aria-label="Mở danh sách nhiệm vụ">🎯 <span id="dem-nv">0/8</span></button>
-</header>
-<div id="matmang" class="bang-nhac an">📵 Mất mạng – app vẫn mở được nhưng CHƯA gửi/nhận đơn. Có mạng lại sẽ tự nối.</div>
-<div id="caiapp" class="bang-nhac an"><span id="caiapp-chu">Cài app lên máy để mở nhanh như ứng dụng thật.</span><button id="caiapp-nut" class="an" onclick="caiApp()">📲 Cài app</button></div>
-
+<header><img src="icon-192.png" alt=""><h1>Quán Bảy<small>Bánh căn – Bánh xèo · hệ thống vận hành (đang thử)</small></h1></header>
 <main>
-  <!-- Màn chọn vai trò -->
-  <section id="man-chon">
-    <p><b>Vào ca: chọn vai trò của bạn.</b><br>Tập dượt: mở app trên <b>2 cửa sổ</b> (hoặc 2 máy) – một bên Phục vụ, một bên Quầy nước.</p>
-    <button class="to" onclick="chonMan('phucvu')">Phục vụ (gửi đơn nước)</button>
-    <button class="to xanh" onclick="chonMan('nuoc')">Quầy nước (nhận đơn, có chuông)</button>
-    <a class="to" href="phuc-vu.html" style="display:block;text-align:center;text-decoration:none;background:var(--chu);border-radius:12px">Màn Phục vụ đầy đủ<br><small style="font-weight:400;font-size:14px">3 quầy · bàn · gọi món · chờ mang – BẢN MẪU, dữ liệu giả</small></a>
-    <p class="ghi-thu">Bản tập dượt v0.2 · dùng bảng thử, đơn ở đây không phải đơn thật.</p>
-  </section>
+  <div class="canh an" id="matmang">⚠ Mất mạng – các trang cần mạng để nhận đơn. Kiểm tra wifi/4G.</div>
+  <div class="the" id="toi">Đang xem bạn đang ở vị trí nào…</div>
 
-  <!-- Màn phục vụ -->
-  <section id="man-phucvu" class="an">
-    <div class="the">
-      <label for="soban">Số bàn</label>
-      <input id="soban" type="number" inputmode="numeric" min="1" max="99" placeholder="vd 3">
-    </div>
-    <div class="the">
-      <label>Số ly (bấm − / + hoặc chạm vào ô để gõ số)</label>
-      <div class="dong-mon" data-ten="nước mía"><span class="ten">Nước mía</span><button class="tru" aria-label="Bớt 1 ly nước mía">−</button><input type="number" inputmode="numeric" min="0" max="99" value="0" aria-label="Số ly nước mía"><button class="cong" aria-label="Thêm 1 ly nước mía">+</button></div>
-      <div class="dong-mon" data-ten="rau má"><span class="ten">Rau má</span><button class="tru" aria-label="Bớt 1 ly rau má">−</button><input type="number" inputmode="numeric" min="0" max="99" value="0" aria-label="Số ly rau má"><button class="cong" aria-label="Thêm 1 ly rau má">+</button></div>
-      <div class="dong-mon" data-ten="nước ngọt"><span class="ten">Nước ngọt</span><button class="tru" aria-label="Bớt 1 nước ngọt">−</button><input type="number" inputmode="numeric" min="0" max="99" value="0" aria-label="Số nước ngọt"><button class="cong" aria-label="Thêm 1 nước ngọt">+</button></div>
-      <div id="gio"></div>
-      <label for="ghichu" class="nhan-gc">Ghi chú (không bắt buộc)</label>
-      <div class="nhac">Hỏi rõ khách: <b>ly nào</b> ít đá / ít ngọt, mấy ly.</div>
-      <input id="ghichu" type="text" maxlength="100" placeholder="vd: 1 ly ít đá">
-      <div class="hang">
-        <button class="phu" onclick="xoaGio()">Xóa chọn</button>
-        <button class="to" style="margin:0" onclick="guiDon()">Gửi quầy nước</button>
-      </div>
-      <div id="dodo"></div>
-    </div>
-  </section>
+  <a class="nut" href="/bai6-vao-ca.html" data-ma="vao-ca"><span class="i">🙋</span><span>Vào ca<small>Đăng nhập, chọn vị trí làm hôm nay</small></span></a>
+  <a class="nut" href="/bai8-man-bep.html" data-ma="bep"><span class="i">🍳</span><span>Màn bếp<small>Bếp xèo · bếp căn · quầy nước</small></span></a>
+  <a class="nut" href="/bai7-don-mon.html" data-ma="phuc_vu"><span class="i">🧾</span><span>Đơn món<small>Phục vụ: gọi món, chờ mang, bàn</small></span></a>
+  <a class="nut" href="/bai6-fill-do.html" data-ma="fill"><span class="i">📣</span><span>Fill đồ<small>Báo hết đồ, mẹ nhận</small></span></a>
+  <a class="nut" href="/bai6-tam-het.html" data-ma="tam-het"><span class="i">⛔</span><span>Món tạm hết<small>Báo hết món / hết nhân</small></span></a>
 
-  <!-- Màn quầy nước -->
-  <section id="man-nuoc" class="an">
-    <button id="batam" class="to" onclick="batAmBao()">🔔 Bật âm báo (chạm 1 lần đầu ca)</button>
-  </section>
-
-  <section id="khu-don" class="an">
-    <div class="tab">
-      <button id="tab-cho" class="chon" onclick="chonTab('cho')">Đang chờ</button>
-      <button id="tab-ls" onclick="chonTab('ls')">Lịch sử</button>
-    </div>
-    <div id="dsdon"></div>
-  </section>
+  <div class="the an" id="caiapp"><span id="caiapp-chu">Cài app lên màn hình chính để mở nhanh.</span><button class="cai an" id="caiapp-nut">Cài app</button></div>
+  <div class="phu">Bản mẫu (dữ liệu giả): <a href="phuc-vu.html">Màn Phục vụ v3</a></div>
 </main>
 
-<!-- Bảng nhiệm vụ làm quen -->
-<div id="nhiemvu" class="an" onclick="if (event.target === this) dongNhiemVu()">
-  <div class="hop" role="dialog" aria-label="Nhiệm vụ làm quen">
-    <h2>🎯 Nhiệm vụ làm quen</h2>
-    <div id="tiendo"></div>
-    <div id="ds-nv"></div>
-    <button class="dong" onclick="dongNhiemVu()">Đóng</button>
-    <button class="lamlai" onclick="lamLaiNhiemVu()">Làm lại từ đầu (bỏ hết dấu tích)</button>
-  </div>
-</div>
-
 <script>
-// ===== Kết nối kho Singapore (publishable key được phép công khai) =====
-const SB_URL = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
-const SB_KEY = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
-const sb = window.supabase ? supabase.createClient(SB_URL, SB_KEY) : null;
+const URL_KHO = 'https://utkqaphrzdeevrhxrtxw.supabase.co';
+const KHOA_CONG_KHAI = 'sb_publishable_aV8B_uwJs_ciqF_NXRyY6Q_AnbkyApX';
+const VAI_TRO = { phuc_vu: 'Phục vụ', xeo: 'Bếp xèo', can: 'Bếp căn', nuoc: 'Quầy nước', quan_ly: 'Quản lý' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const toi = document.getElementById('toi');
 
-let man = null;            // 'phucvu' | 'nuoc'
-const don = new Map();     // id -> dòng đơn
-let gio = {};              // món đang chọn: { 'nước mía': 2 }
-let amCtx = null;          // bộ phát âm thanh (cần chạm 1 lần mới được kêu)
-let giuSang = null;        // giữ màn hình sáng
-const doTre = { t0: null, id: null, den: {} };  // đo thời gian chuông kêu
+// Ai đang đăng nhập, đang ở vị trí nào → tô sáng nút nên bấm
+async function xemToi() {
+  if (!window.supabase) { toi.textContent = 'Chưa tải được thư viện (mất mạng?).'; return; }
+  const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { toi.innerHTML = 'Chưa đăng nhập → bấm <b>Vào ca</b>.'; danhDau('vao-ca'); return; }
+  const [nv, ca] = await Promise.all([
+    sb.from('nhan_vien').select('ten_hien_thi').eq('id', session.user.id).maybeSingle(),
+    sb.from('vao_ca').select('vai_tro, nhip_cuoi').eq('nhan_vien_id', session.user.id).is('roi_luc', null).maybeSingle(),
+  ]);
+  const ten = nv.data ? nv.data.ten_hien_thi : 'bạn';
+  const c = ca.data && ca.data.nhip_cuoi && Date.now() - new Date(ca.data.nhip_cuoi) < 10 * 60000 ? ca.data : null;
+  if (!c) { toi.innerHTML = `Xin chào <b>${esc(ten)}</b>. Bạn <b>chưa vào ca</b> → bấm <b>Vào ca</b>.`; danhDau('vao-ca'); return; }
+  toi.innerHTML = `Xin chào <b>${esc(ten)}</b> · đang ở <b>${VAI_TRO[c.vai_tro] || c.vai_tro}</b>`;
+  danhDau(['xeo', 'can', 'nuoc'].includes(c.vai_tro) ? 'bep' : c.vai_tro);
+}
+function danhDau(ma) { document.querySelectorAll('.nut').forEach(a => a.classList.toggle('goi-y', a.dataset.ma === ma)); }
+xemToi().catch(() => { toi.textContent = 'Không xem được vị trí (mất mạng?).'; });
 
-// ===== Nhiệm vụ làm quen (lưu trên máy này, tự tích khi làm đúng) =====
-const NHIEM_VU = [
-  { ma: 'ket_noi',  ten: 'Mở app, thấy nút xanh "Đã kết nối"', ghi: 'Góc trên bên phải. Xanh = app đã nối với kho Supabase ở Singapore.' },
-  { ma: 'cai_app',  ten: 'Cài app lên máy, mở lại từ biểu tượng', ghi: 'Bấm "📲 Cài app" (hoặc Chrome ⋮ → Cài đặt ứng dụng / Thêm vào màn hình chính). Mở từ biểu tượng "Quán Bảy" thì mục này tự tích.' },
-  { ma: 'bat_am',   ten: 'Vào ca Quầy nước, bật âm báo', ghi: 'Chọn "Quầy nước" → chạm "🔔 Bật âm báo". Máy sẽ kêu thử 1 lần.' },
-  { ma: 'gui_don',  ten: 'Vào ca Phục vụ, gửi đơn Bàn 3: 2 nước mía, ghi chú "1 ly ít đá"', ghi: 'Dùng cửa sổ/máy thứ 2. Bên Quầy nước phải kêu chuông + hiện đơn.' },
-  { ma: 'xong',     ten: 'Bấm "Xong" cho đơn đó', ghi: 'Đơn biến khỏi "Đang chờ" và sang tab "Lịch sử" ở CẢ 2 cửa sổ.' },
-  { ma: 'hoan_tac', ten: 'Vào "Lịch sử", bấm "Hoàn tác"', ghi: 'Đơn quay lại đầu hàng đợi, nhãn đỏ "LÀM LẠI – ƯU TIÊN", Quầy nước kêu lại.' },
-  { ma: 'mat_mang', ten: 'Thử mất mạng rồi có mạng lại', ghi: 'Tắt wifi → thấy băng đỏ "Mất mạng", app vẫn mở được. Bật wifi lại → tự xanh "Đã kết nối".' },
-  { ma: 'hoi_claude', ten: 'Quay lại chat, hỏi Claude: "Kho đang có bao nhiêu đơn thử?"', ghi: 'Claude đọc thẳng kho Supabase để trả lời – đây là cách Claude cùng làm với hệ thống. Hỏi xong tự bấm tích.', tay: true }
-];
-const KHOA_NV = 'quanbay-nhiemvu-v1';
-function docNV() { try { return JSON.parse(localStorage.getItem(KHOA_NV)) || {}; } catch (e) { return {}; } }
-let nvXong = docNV();
-function tichNV(ma) {
-  if (nvXong[ma]) return;
-  nvXong[ma] = new Date().toISOString();
-  try { localStorage.setItem(KHOA_NV, JSON.stringify(nvXong)); } catch (e) {}
-  veNhiemVu();
-  const nv = NHIEM_VU.find(n => n.ma === ma);
-  baoNho('✅ Xong nhiệm vụ: ' + nv.ten);
-}
-function veNhiemVu() {
-  const soXong = NHIEM_VU.filter(n => nvXong[n.ma]).length;
-  document.getElementById('dem-nv').textContent = soXong + '/' + NHIEM_VU.length;
-  document.getElementById('tiendo').textContent = soXong === NHIEM_VU.length
-    ? '🎉 Xong hết! Bạn đã nắm cách app chạy. Báo Claude để làm bước tiếp.'
-    : 'Đã xong ' + soXong + '/' + NHIEM_VU.length + '. Làm lần lượt từ trên xuống, mục nào làm đúng sẽ tự tích.';
-  const ds = document.getElementById('ds-nv'); ds.innerHTML = '';
-  NHIEM_VU.forEach((n, i) => {
-    const d = document.createElement('div'); d.className = 'nv' + (nvXong[n.ma] ? ' xong' : '');
-    const dau = document.createElement('div'); dau.className = 'dau'; dau.textContent = nvXong[n.ma] ? '✓' : '';
-    if (!nvXong[n.ma]) { dau.style.color = 'var(--xam)'; dau.textContent = i + 1; }
-    const nd = document.createElement('div');
-    const b = document.createElement('b'); b.textContent = n.ten;
-    const s = document.createElement('span'); s.textContent = n.ghi;
-    nd.append(b, s);
-    if (n.tay && !nvXong[n.ma]) {
-      const t = document.createElement('button'); t.className = 'tay'; t.textContent = 'Tôi đã hỏi xong';
-      t.onclick = () => tichNV(n.ma); nd.append(document.createElement('br'), t);
-    }
-    d.append(dau, nd); ds.append(d);
-  });
-}
-function moNhiemVu() { veNhiemVu(); document.getElementById('nhiemvu').classList.remove('an'); }
-function dongNhiemVu() { document.getElementById('nhiemvu').classList.add('an'); }
-function lamLaiNhiemVu() {
-  if (!confirm('Bỏ hết dấu tích nhiệm vụ trên máy này?')) return;
-  nvXong = {}; try { localStorage.removeItem(KHOA_NV); } catch (e) {}
-  veNhiemVu(); kiemTraDaCai();
-  if (document.getElementById('trangthai').classList.contains('ok')) tichNV('ket_noi');
-}
-// Cửa sổ khác cùng máy tích nhiệm vụ → cửa sổ này cập nhật theo
-window.addEventListener('storage', (e) => { if (e.key === KHOA_NV) { nvXong = docNV(); veNhiemVu(); } });
-
-// Thông báo nhỏ thoáng qua
-function baoNho(chu) {
-  const d = document.createElement('div');
-  d.textContent = chu;
-  d.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:20;max-width:92vw;padding:12px 16px;border-radius:12px;background:#2e7d32;color:#fff;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25)';
-  document.body.append(d); setTimeout(() => d.remove(), 3500);
-}
-
-// ===== PWA: cài app + chạy khi mất mạng =====
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch((e) => console.error('Không đăng ký được service worker', e));
-}
+// ===== PWA: cài app + mở được khi mất mạng =====
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 const dangLaApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-function kiemTraDaCai() {
-  if (dangLaApp()) { tichNV('cai_app'); document.getElementById('caiapp').classList.add('an'); }
-  else document.getElementById('caiapp').classList.remove('an');
-}
+if (!dangLaApp()) document.getElementById('caiapp').classList.remove('an');
 let loiMoiCai = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault(); loiMoiCai = e;
-  document.getElementById('caiapp-nut').classList.remove('an');
-});
-async function caiApp() {
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); loiMoiCai = e; document.getElementById('caiapp-nut').classList.remove('an'); });
+document.getElementById('caiapp-nut').onclick = async () => {
   if (!loiMoiCai) return;
-  loiMoiCai.prompt();
-  const kq = await loiMoiCai.userChoice;
-  loiMoiCai = null; document.getElementById('caiapp-nut').classList.add('an');
-  if (kq.outcome === 'accepted') document.getElementById('caiapp-chu').textContent = 'Đã cài! Đóng cửa sổ này, mở app "Quán Bảy" từ biểu tượng.';
-}
-window.addEventListener('appinstalled', () => {
-  document.getElementById('caiapp-chu').textContent = 'Đã cài! Mở app "Quán Bảy" từ biểu tượng để tích nhiệm vụ 2.';
-});
-if (!/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-  document.getElementById('caiapp-chu').textContent = 'Cài app: bấm nút bên cạnh, hoặc biểu tượng ⊕ "Cài đặt" ở cuối thanh địa chỉ Chrome.';
-} else {
-  document.getElementById('caiapp-chu').textContent = 'Cài app: bấm nút bên cạnh, hoặc Chrome ⋮ → "Thêm vào màn hình chính".';
-}
-
-// Mất mạng / có mạng lại
-let tungMatMang = false;
-function capNhatMang() {
-  const mat = !navigator.onLine;
-  document.getElementById('matmang').classList.toggle('an', !mat);
-  if (mat) { tungMatMang = true; trangThai('Mất mạng', 'loi'); }
-}
-window.addEventListener('offline', capNhatMang);
-window.addEventListener('online', () => {
-  capNhatMang(); trangThai('Đang nối lại…');
-  // Mất mạng ngắn thì kênh realtime có thể chưa kịp đứt → tự kiểm tra lại sau 2 giây
-  setTimeout(() => {
-    if (kenh && kenh.state === 'joined' && navigator.onLine) {
-      trangThai('Đã kết nối', 'ok'); taiLai();
-      if (tungMatMang) tichNV('mat_mang');
-    }
-  }, 2000);
-});
-
-// ===== Chọn vai trò (vào ca) =====
-function chonMan(m) {
-  man = m;
-  if (location.hash !== '#' + m) history.replaceState(null, '', '#' + m);
-  ['chon', 'phucvu', 'nuoc'].forEach(x => document.getElementById('man-' + x).classList.toggle('an', x !== m));
-  document.getElementById('khu-don').classList.remove('an');
-  document.getElementById('nut-doi').classList.remove('an');
-  document.getElementById('tieude').textContent = m === 'nuoc' ? 'Quầy nước' : 'Phục vụ';
-  veDanhSach();
-}
-function doiVaiTro() {
-  man = null;
-  history.replaceState(null, '', location.pathname);
-  ['phucvu', 'nuoc'].forEach(x => document.getElementById('man-' + x).classList.add('an'));
-  document.getElementById('man-chon').classList.remove('an');
-  document.getElementById('khu-don').classList.add('an');
-  document.getElementById('nut-doi').classList.add('an');
-  document.getElementById('tieude').textContent = 'Quán Bảy';
-}
-
-// ===== Phục vụ: chọn số ly, gửi đơn =====
-const MON = ['nước mía', 'rau má', 'nước ngọt'];   // thứ tự hiện trong đơn
-
-function datSo(ten, n, dangGo) {
-  n = Math.max(0, Math.min(99, Number.isFinite(n) ? n : 0));
-  if (n) gio[ten] = n; else delete gio[ten];
-  veGio(dangGo);
-}
-function xoaGio() { gio = {}; veGio(); }
-function chuoiGio() { return MON.filter(t => gio[t]).map(t => gio[t] + ' ' + t).join(', '); }
-function veGio(dangGo) {
-  document.getElementById('gio').textContent = chuoiGio() ? 'Đơn: ' + chuoiGio() : 'Chưa chọn nước nào';
-  document.querySelectorAll('.dong-mon').forEach(d => {
-    const n = gio[d.dataset.ten] || 0;
-    d.classList.toggle('co', n > 0);
-    if (!dangGo) d.querySelector('input').value = n;
-  });
-}
-document.querySelectorAll('.dong-mon').forEach(d => {
-  const ten = d.dataset.ten, o = d.querySelector('input');
-  d.querySelector('.tru').onclick = () => datSo(ten, (gio[ten] || 0) - 1);
-  d.querySelector('.cong').onclick = () => datSo(ten, (gio[ten] || 0) + 1);
-  o.oninput = () => datSo(ten, parseInt(o.value, 10), true);
-  o.onfocus = () => o.select();
-  o.onblur = () => veGio();
-});
-
-async function guiDon() {
-  if (!sb) return alert('App chưa tải được phần kết nối kho. Kiểm tra mạng rồi mở lại app.');
-  if (!navigator.onLine) return alert('Đang mất mạng – đơn CHƯA gửi được. Ra quầy báo miệng, có mạng lại thì gửi.');
-  const soBan = parseInt(document.getElementById('soban').value, 10);
-  const noiDung = chuoiGio();
-  const ghiChu = document.getElementById('ghichu').value.trim();
-  if (!soBan || soBan < 1 || soBan > 99) return alert('Nhập số bàn (1–99).');
-  if (!noiDung) return alert('Chạm chọn ít nhất 1 nước.');
-  document.getElementById('dodo').textContent = 'Đang gửi…';
-  doTre.t0 = performance.now(); doTre.id = null;
-  const { data, error } = await sb.from('don_nuoc_thu')
-    .insert({ so_ban: soBan, noi_dung: noiDung, ghi_chu: ghiChu || null }).select('id').single();
-  if (error) { document.getElementById('dodo').textContent = ''; return baoLoi('Gửi đơn', error); }
-  doTre.id = data.id;
-  xoaGio();
-  document.getElementById('ghichu').value = '';
-  baoDoTre();
-  tichNV('gui_don');
-}
-
-function baoDoTre() {
-  if (doTre.id == null || doTre.den[doTre.id] == null) return;
-  const ms = Math.round(doTre.den[doTre.id] - doTre.t0);
-  document.getElementById('dodo').textContent = '✓ Đã gửi. Kho báo về sau ' + ms + ' ms' + (ms < 1000 ? ' (dưới 1 giây)' : ' (CHẬM hơn 1 giây)');
-  doTre.id = null;
-}
-
-// ===== Quầy nước: âm báo =====
-function batAmBao() {
-  try {
-    amCtx = amCtx || new (window.AudioContext || window.webkitAudioContext)();
-    amCtx.resume();
-    chuong();
-    document.getElementById('batam').classList.add('an');
-    tichNV('bat_am');
-  } catch (e) { alert('Máy này không phát được âm báo: ' + e.message); }
-  giuManHinhSang();
-}
-
-function chuong() {
-  if (!amCtx) return;
-  const t = amCtx.currentTime;
-  for (let i = 0; i < 3; i++) {
-    [880, 1320].forEach((tanSo, j) => {
-      const o = amCtx.createOscillator(), g = amCtx.createGain();
-      o.type = 'triangle'; o.frequency.value = tanSo;
-      const bd = t + i * 0.6 + j * 0.18;
-      g.gain.setValueAtTime(0.0001, bd);
-      g.gain.exponentialRampToValueAtTime(0.9, bd + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, bd + 0.5);
-      o.connect(g).connect(amCtx.destination);
-      o.start(bd); o.stop(bd + 0.55);
-    });
-  }
-  if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
-}
-
-async function giuManHinhSang() {
-  try { if ('wakeLock' in navigator) giuSang = await navigator.wakeLock.request('screen'); } catch (e) {}
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && man === 'nuoc' && amCtx) giuManHinhSang();
-});
-
-// ===== Xong / Hoàn tác =====
-async function xong(id) {
-  const { data, error } = await sb.from('don_nuoc_thu')
-    .update({ xong_luc: new Date().toISOString(), uu_tien: false }).eq('id', id).select().single();
-  if (error) return baoLoi('Bấm Xong', error);
-  don.set(id, data); veDanhSach();
-  tichNV('xong');
-}
-async function hoanTac(id) {
-  const { data, error } = await sb.from('don_nuoc_thu')
-    .update({ xong_luc: null, uu_tien: true }).eq('id', id).select().single();
-  if (error) return baoLoi('Hoàn tác', error);
-  don.set(id, data); veDanhSach(id);
-  tichNV('hoan_tac');
-}
-
-// ===== Danh sách đơn: tab Đang chờ / Lịch sử =====
-let tab = 'cho';
-function chonTab(t) {
-  tab = t;
-  document.getElementById('tab-cho').classList.toggle('chon', t === 'cho');
-  document.getElementById('tab-ls').classList.toggle('chon', t === 'ls');
-  veDanhSach();
-}
-const gioVN = (s) => new Date(s).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-function veDanhSach(idMoi) {
-  const ds = document.getElementById('dsdon');
-  ds.innerHTML = '';
-  const tatCa = [...don.values()];
-  const cho = tatCa.filter(d => !d.xong_luc)
-    .sort((a, b) => (b.uu_tien - a.uu_tien) || a.tao_luc.localeCompare(b.tao_luc));
-  const ls = tatCa.filter(d => d.xong_luc).sort((a, b) => b.xong_luc.localeCompare(a.xong_luc));
-  document.getElementById('tab-cho').textContent = 'Đang chờ (' + cho.length + ')';
-  document.getElementById('tab-ls').textContent = 'Lịch sử (' + ls.length + ')';
-  const hang = tab === 'cho' ? cho : ls.slice(0, 50);
-  if (!hang.length) {
-    ds.innerHTML = '<div class="trong">' + (tab === 'cho' ? 'Không có đơn nào đang chờ' : 'Chưa có đơn nào xong') + '</div>';
-    return;
-  }
-  for (const d of hang) {
-    const the = document.createElement('div');
-    the.className = 'don' + (d.id === idMoi ? ' moi' : '') + (tab === 'cho' && d.uu_tien ? ' ut' : '') + (tab === 'ls' ? ' ls' : '');
-    const trai = document.createElement('div');
-    if (tab === 'cho' && d.uu_tien) {
-      const ut = document.createElement('div'); ut.className = 'nhan-ut'; ut.textContent = '↩ LÀM LẠI – ƯU TIÊN';
-      trai.append(ut);
-    }
-    const ban = document.createElement('div'); ban.className = 'ban'; ban.textContent = 'Bàn ' + d.so_ban;
-    const nd = document.createElement('div'); nd.className = 'nd'; nd.textContent = d.noi_dung;
-    trai.append(ban, nd);
-    if (d.ghi_chu) {
-      const gc = document.createElement('div'); gc.className = 'gc'; gc.textContent = '📝 ' + d.ghi_chu;
-      trai.append(gc);
-    }
-    const gio = document.createElement('div'); gio.className = 'gio';
-    gio.textContent = 'Gọi lúc ' + gioVN(d.tao_luc) + (d.xong_luc ? ' · Xong lúc ' + gioVN(d.xong_luc) : '');
-    trai.append(gio);
-    the.append(trai);
-    const nut = document.createElement('button');
-    if (tab === 'cho') { nut.textContent = 'Xong'; nut.onclick = () => xong(d.id); }
-    else { nut.textContent = 'Hoàn tác'; nut.className = 'hoantac'; nut.onclick = () => hoanTac(d.id); }
-    the.append(nut);
-    ds.append(the);
-  }
-}
-
-async function taiLai() {
-  const { data, error } = await sb.from('don_nuoc_thu').select('*').order('tao_luc');
-  if (error) return baoLoi('Tải đơn', error);
-  don.clear(); data.forEach(d => don.set(d.id, d)); veDanhSach();
-}
-
-// ===== Realtime: kho tự đẩy đơn mới / đơn xong xuống mọi máy đang mở =====
-function trangThai(chu, loai) {
-  const el = document.getElementById('trangthai');
-  el.textContent = chu; el.className = loai || '';
-}
-
-let kenh = null;
-if (sb) {
-  kenh = sb.channel('quay-nuoc')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'don_nuoc_thu' }, (p) => {
-      if (p.eventType === 'INSERT') {
-        doTre.den[p.new.id] = performance.now();
-        don.set(p.new.id, p.new);
-        veDanhSach(p.new.id);
-        if (man === 'nuoc') chuong();
-        if (man === 'phucvu') baoDoTre();
-      } else if (p.eventType === 'UPDATE') {
-        const cu = don.get(p.new.id);
-        const biHoanTac = cu && cu.xong_luc && !p.new.xong_luc;
-        don.set(p.new.id, p.new);
-        veDanhSach(biHoanTac ? p.new.id : undefined);
-        if (biHoanTac && man === 'nuoc') chuong();
-      } else if (p.eventType === 'DELETE') {
-        don.delete(p.old.id); veDanhSach();
-      }
-    })
-    .subscribe((st, err) => {
-      if (st === 'SUBSCRIBED') {
-        trangThai('Đã kết nối', 'ok'); taiLai(); tichNV('ket_noi');
-        if (tungMatMang && navigator.onLine) tichNV('mat_mang');
-      }
-      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { trangThai('Mất kết nối', 'loi'); if (err) console.error(err); }
-      else if (st === 'CLOSED') trangThai('Đã ngắt', 'loi');
-    });
-} else {
-  trangThai('Mất mạng', 'loi');
-}
-
-function baoLoi(viec, error) {
-  console.error(viec, error);
-  let goiY = '';
-  if (error.code === '42501') goiY = '\n→ Thiếu quyền (grant/policy).';
-  if (error.code === '42P01' || /does not exist/.test(error.message)) goiY = '\n→ Bảng don_nuoc_thu chưa được tạo.';
-  if (/fetch|network/i.test(error.message)) goiY = '\n→ Có thể đang mất mạng.';
-  alert(viec + ' bị lỗi: ' + error.message + goiY);
-}
-
-// Mở thẳng màn nếu link có #phucvu hoặc #nuoc (phím tắt khi giữ biểu tượng app)
-if (location.hash === '#phucvu' || location.hash === '#nuoc') chonMan(location.hash.slice(1));
-window.addEventListener('hashchange', () => {
-  if ((location.hash === '#phucvu' || location.hash === '#nuoc') && man !== location.hash.slice(1)) chonMan(location.hash.slice(1));
-});
-veGio();
-veNhiemVu();
-kiemTraDaCai();
+  loiMoiCai.prompt(); await loiMoiCai.userChoice; loiMoiCai = null;
+  document.getElementById('caiapp-nut').classList.add('an');
+};
+window.addEventListener('appinstalled', () => { document.getElementById('caiapp-chu').textContent = 'Đã cài! Mở app "Quán Bảy" từ biểu tượng trên màn hình chính.'; });
+const capNhatMang = () => document.getElementById('matmang').classList.toggle('an', navigator.onLine);
+window.addEventListener('offline', capNhatMang); window.addEventListener('online', () => { capNhatMang(); xemToi().catch(() => {}); });
 capNhatMang();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') xemToi().catch(() => {}); });
 </script>
 </body>
 </html>
