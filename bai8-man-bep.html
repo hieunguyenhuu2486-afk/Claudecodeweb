@@ -12,10 +12,10 @@
      Chỉ chứa publishable key (được phép công khai). -->
 <style>
   :root { --nen:#fff8ee; --chu:#2b1d0e; --do:#c0392b; --xanh:#1e8449; --cam:#e67e22; --xam:#7a6a58; --vien:#e5d5bf; --vang:#fff3c4;
-          --tren:56px; --duoi:68px; }
+          --tren:56px; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { margin:0; background:var(--nen); color:var(--chu); font-family:system-ui,"Segoe UI",Roboto,sans-serif; }
-  body { padding-bottom:calc(var(--duoi) + 12px + env(safe-area-inset-bottom)); }
+  body { padding-bottom:calc(16px + env(safe-area-inset-bottom)); }
   button { font:inherit; border:0; border-radius:14px; cursor:pointer; }
   button:disabled { opacity:.45; cursor:default; }
   a { color:inherit; }
@@ -29,7 +29,7 @@
   #mat { display:none; background:var(--do); color:#fff; font-weight:800; font-size:17px; padding:10px 14px; text-align:center; }
   #mat.hien { display:block; }
   /* Dải báo fill (máy người nhận) */
-  #daiFill { position:sticky; z-index:15; top:var(--tren); display:none; margin:8px 12px 0; padding:12px 14px; border-radius:14px;
+  #daiFill { position:sticky; z-index:15; top:110px; display:none; margin:8px 12px 0; padding:12px 14px; border-radius:14px;
              background:var(--vang); border:3px solid #f1c40f; font-weight:800; font-size:18px; box-shadow:0 4px 14px rgba(0,0,0,.18); cursor:pointer; }
   #daiFill.hien { display:block; }
   #daiFill.do { background:#fde2df; border-color:var(--do); }
@@ -97,25 +97,24 @@
   .gio-dong input { margin-top:6px; font-size:16px; padding:10px; }
   .tong { display:flex; justify-content:space-between; font-weight:900; font-size:19px; padding-top:12px; }
   /* Mục Fill đồ = trang 6.5 nhúng, luôn chạy ngầm */
-  #khungFill { position:fixed; left:0; top:var(--tren); width:100%; height:calc(100vh - var(--tren) - var(--duoi)); border:0; background:var(--nen); z-index:10; display:none; }
+  #khungFill { position:fixed; left:0; top:110px; width:100%; height:calc(100vh - 110px); border:0; background:var(--nen); z-index:10; display:none; }
   body.mo-fill #khungFill { display:block; }
   body.mo-fill main, body.mo-fill #daiFill { display:none; }
-  /* Thanh dưới */
-  nav { position:fixed; left:0; right:0; bottom:0; z-index:30; height:calc(var(--duoi) + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom);
-        background:#fff; border-top:2px solid var(--vien); display:flex; }
-  nav button { flex:1; background:none; border-radius:0; font-size:17px; font-weight:900; color:var(--xam); position:relative; padding:4px 2px; line-height:1.15; }
-  nav button span.i { display:block; font-size:24px; }
-  nav button.chon { color:var(--chu); background:#f6ead8; box-shadow:inset 0 4px 0 var(--cam); }
-  .dem { position:absolute; top:4px; left:calc(50% + 10px); min-width:26px; height:26px; padding:0 7px; border-radius:99px; background:var(--do); color:#fff; font-size:15px; line-height:26px; }
+  /* Thanh mục: nằm trên đầu, dính theo khi kéo xuống (cùng kiểu màn Phục vụ – Hieu chốt 20/11) */
+  nav { display:flex; gap:6px; padding:8px 8px; background:var(--nen); border-bottom:2px solid var(--vien); }
+  nav button { flex:1 1 0; min-width:0; min-height:58px; padding:6px 2px; background:#eee; color:var(--chu); font-size:16px; font-weight:900; white-space:nowrap; border-radius:12px; position:relative; line-height:1.2; }
+  nav button span.i { display:block; font-size:22px; }
+  nav button.chon { background:var(--chu); color:#fff; }
+  .dem { position:absolute; top:3px; right:4px; min-width:26px; height:26px; padding:0 7px; border-radius:99px; background:var(--do); color:#fff; font-size:15px; line-height:26px; }
   .dem.cam { background:var(--cam); }
-  .dem.xanh { background:var(--xanh); }
-  .bao { position:fixed; left:12px; right:12px; bottom:calc(var(--duoi) + 12px + env(safe-area-inset-bottom)); background:#222; color:#fff; padding:16px; border-radius:14px; font-size:17px; font-weight:700; z-index:40; display:none; }
-  /* Xoay ngang trên điện thoại (màn thấp): thu thanh trên/dưới để dành chỗ cho thẻ */
+  .bao { position:fixed; left:12px; right:12px; bottom:calc(16px + env(safe-area-inset-bottom)); background:#222; color:#fff; padding:16px; border-radius:14px; font-size:17px; font-weight:700; z-index:40; display:none; }
+  /* Xoay ngang trên điện thoại (màn thấp): thu thanh trên để dành chỗ cho thẻ */
   @media (orientation: landscape) and (max-height: 520px) {
-    :root { --tren:44px; --duoi:54px; }
+    :root { --tren:42px; }
     #tieu { font-size:19px; } #dongho { font-size:17px; }
-    nav button { font-size:15px; } nav button span.i { display:inline; font-size:18px; margin-right:4px; }
-    nav .dem { position:static; display:inline-block; margin-left:6px; height:24px; line-height:24px; }
+    nav { padding:5px 10px; } nav button { min-height:42px; font-size:16px; padding:5px 10px; }
+    nav button span.i { display:inline; font-size:18px; margin-right:4px; }
+    .dem { position:static; display:inline-block; margin-left:6px; height:24px; line-height:24px; vertical-align:middle; }
     .so-ban { font-size:28px; } .dong .ten { font-size:20px; } .dong .ten .sl { font-size:26px; min-width:38px; }
     .nut { min-height:50px; font-size:17px; padding:8px 12px; }
   }
@@ -125,11 +124,11 @@
 <header>
   <div class="tren"><div id="tieu">Màn bếp</div><div class="phai"><span id="ketnoi"></span><span id="dongho"></span></div></div>
   <div id="mat">⚠ Mất kết nối – món mới chưa về được. Xem lại khi có mạng.</div>
+  <nav id="nav"></nav>
 </header>
 <div id="daiFill" role="button"></div>
 <main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
 <iframe id="khungFill" title="Fill đồ"></iframe>
-<nav id="nav"></nav>
 <div class="bao" id="bao"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
@@ -175,7 +174,7 @@ function cacTab() {
   if (!tramToi()) return [];
   return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : [])];
 }
-const TAB = { don: ['🧾', 'Đơn món'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'] };
+const TAB = { don: ['🧾', 'Nhận đơn'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'] };
 
 // ---------- tiện ích dữ liệu ----------
 const goc = (d) => d.goc_id ?? d.id;
@@ -307,11 +306,12 @@ function veDau() {
   document.getElementById('ketnoi').textContent = !S.user ? '' : mat ? '○ mất mạng' : '● đã kết nối';
   canhKhung();
 }
-// Khung Fill đồ nằm giữa thanh trên (cao thêm khi có dải mất mạng) và thanh dưới
+// Khung Fill đồ + dải báo fill nằm ngay dưới thanh trên (thanh trên cao thêm khi có dải mất mạng)
 function canhKhung() {
-  const tren = document.querySelector('header').offsetHeight, duoi = navEl.offsetHeight;
+  const tren = document.querySelector('header').offsetHeight;
   khung.style.top = tren + 'px';
-  khung.style.height = Math.max(200, window.innerHeight - tren - duoi) + 'px';
+  khung.style.height = Math.max(200, window.innerHeight - tren) + 'px';
+  document.getElementById('daiFill').style.top = (tren + 8) + 'px';
 }
 window.addEventListener('resize', canhKhung);
 function veNoi() {

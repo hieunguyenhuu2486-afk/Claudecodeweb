@@ -28,7 +28,9 @@
   .goi-y { font-size:13px; color:var(--xam); }
   .canh { padding:12px; border-radius:10px; background:#fff1e0; color:#a35200; margin-bottom:10px; }
   .canh a { color:#a35200; font-weight:800; }
-  .tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px; }
+  /* Thanh mục dính ngay dưới thanh tiêu đề khi kéo xuống (cùng kiểu màn bếp Bài 8 – Hieu chốt 20/11) */
+  .tabs { display:flex; gap:6px; overflow-x:auto; position:sticky; top:var(--dau, 44px); z-index:4; background:var(--nen);
+          margin:0 -16px 10px; padding:8px 16px; border-bottom:2px solid var(--vien); }
   .tabs button { flex:0 0 auto; padding:10px 12px; font-weight:800; background:#eee; color:var(--chu); position:relative; }
   .tabs button.chon { background:var(--chu); color:#fff; }
   .dem { display:inline-block; min-width:20px; margin-left:4px; padding:1px 6px; border-radius:99px; background:var(--do); color:#fff; font-size:12px; }
@@ -538,6 +540,9 @@ function langNghe() {
     .subscribe(st => kn.textContent = st === 'SUBSCRIBED' ? '● đã kết nối' : '○ ' + st.toLowerCase());
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) tai(); });
+// Chiều cao thanh tiêu đề → thanh mục dính ngay bên dưới
+const datDau = () => document.documentElement.style.setProperty('--dau', document.querySelector('header').offsetHeight + 'px');
+datDau(); window.addEventListener('resize', datDau);
 
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
