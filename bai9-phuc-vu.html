@@ -153,9 +153,7 @@
   <div id="ghim"></div>
 </header>
 <main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
-<iframe id="khungFill" class="khung" title="Fill đồ"></iframe>
-<iframe id="khungThoai" class="khung" title="Đối thoại"></iframe>
-<div class="bao" id="bao"></div>
+<iframe id="khungFill" class="khung" title="Fill đồ"></iframe><div class="bao" id="bao"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
@@ -181,7 +179,7 @@ const KQ = {
 
 const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
 const man = document.getElementById('man'), navEl = document.getElementById('nav'), quayEl = document.getElementById('quay'), ghimEl = document.getElementById('ghim');
-const khung = document.getElementById('khungFill'), khungThoai = document.getElementById('khungThoai');
+const khung = document.getElementById('khungFill');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tien = (n) => Number(n).toLocaleString('vi-VN') + 'đ';
 const gio = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -210,7 +208,7 @@ const laPV = () => (S.ca && S.ca.vai_tro === 'phuc_vu') || S.ql;
 const choMang = (d) => (d.trang_thai === 'xong' && d.tram !== 'phuc_vu') || (d.trang_thai === 'moi' && d.tram === 'phuc_vu');
 const dangLam = (d) => d.trang_thai === 'moi' && d.tram !== 'phuc_vu';
 const cmCua = (pid) => S.canMang.filter(c => c.phien_id === pid);
-const TAB = { tong: ['📋', 'Tổng quan'], mang: ['🛎', 'Chờ mang'], quay: ['🍳', 'Quầy'], fill: ['📣', 'Fill đồ'], thoai: ['💬', 'Đối thoại'] };
+const TAB = { tong: ['📋', 'Tổng quan'], mang: ['🛎', 'Chờ mang'], quay: ['🍳', 'Quầy'], fill: ['📣', 'Fill đồ'] };
 // Tô chấm đầy đủ / combo khi hết 1 thành phần (Hieu chốt 19/11 – docs/menu-gia.md)
 const THANH_PHAN = { nuoc_cham: { trung: 'trứng', xiu_mai: 'xíu mại', da_heo: 'da heo' } };
 const thieuThanhPhan = (m) => Object.entries(THANH_PHAN[m.ma] || {}).filter(([ma]) => hetHomNay((S.menu.find(x => x.ma === ma) || {}).tam_het_luc)).map(([, ten]) => ten);
@@ -316,7 +314,7 @@ function ve() {
   veDau();
   if (!S.nv) return;
   veQuayBar(); veNav(); veGhim(); canhKhung();
-  if (S.tab === 'fill' || S.tab === 'thoai') return;
+  if (S.tab === 'fill') return;
   if (dangGo() || S.cham) { S.cho = true; return; }
   S.cho = false;
   const h = veNoi();
@@ -341,14 +339,13 @@ function veNav() {
   if (!laPV()) { navEl.innerHTML = ''; return; }
   const sMang = S.dong.filter(choMang).reduce((a, d) => a + d.so_luong, 0) + S.canMang.filter(c => !c.xong_luc).length;
   const dem = { mang: sMang ? `<span class="dem">${sMang}</span>` : '',
-    fill: S.fill && S.fill.nhan ? `<span class="dem">${S.fill.nhan}</span>` : S.fill && S.fill.cua ? `<span class="dem cam">${S.fill.cua}</span>` : '',
-    thoai: S.thoai && S.thoai.chuaNghe ? `<span class="dem">${S.thoai.chuaNghe}</span>` : '' };
+    fill: S.fill && (S.fill.nhan || S.fill.tin) ? `<span class="dem">${(S.fill.nhan || 0) + (S.fill.tin || 0)}</span>` : S.fill && S.fill.cua ? `<span class="dem cam">${S.fill.cua}</span>` : '' };
   const h = Object.keys(TAB).map(k => `<button class="${S.tab === k ? 'chon' : ''}" data-tab="${k}"><span class="i">${TAB[k][0]}</span>${TAB[k][1]}${dem[k] || ''}</button>`).join('');
   if (navEl.innerHTML !== h) navEl.innerHTML = h;
 }
 function veGhim() {
   const ds = S.ghim.map(phienCua).filter(Boolean);
-  ghimEl.classList.toggle('hien', laPV() && ds.length > 0 && S.tab !== 'fill' && S.tab !== 'thoai');
+  ghimEl.classList.toggle('hien', laPV() && ds.length > 0 && S.tab !== 'fill');
   if (!ds.length) { ghimEl.innerHTML = ''; return; }
   let h = `<button data-moghim>${S.moGhim ? '▴' : '▾'} 📌 Đã ghim ${ds.length}/3: ${esc(ds.map(tenBan).join(' · '))}</button>`;
   if (S.moGhim) h += `<div class="ds-ghim">${ds.map(p => {
@@ -661,34 +658,28 @@ async function rpc(ten, thamSo, taiLai = true) {
   }
 }
 
-// ---------- mục nhúng: Fill đồ + Đối thoại ----------
+// ---------- mục nhúng: Fill đồ (có Đối thoại bên trong – Hieu chốt 20/11) ----------
 function napKhung() {
   if (!khung.dataset.nap) { khung.dataset.nap = '1'; khung.src = 'bai6-fill-do.html?nhung=1'; }
-  if (!khungThoai.dataset.nap) { khungThoai.dataset.nap = '1'; khungThoai.src = 'bai9-doi-thoai.html?nhung=1'; }
 }
 function canhKhung() {
   const tren = document.querySelector('header').offsetHeight;
-  [khung, khungThoai].forEach(k => { k.style.top = tren + 'px'; k.style.height = Math.max(200, window.innerHeight - tren) + 'px'; });
+  khung.style.top = tren + 'px'; khung.style.height = Math.max(200, window.innerHeight - tren) + 'px';
 }
 window.addEventListener('resize', canhKhung);
 window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data) return;
   if (e.source === khung.contentWindow && e.data.fill) {
     const f = e.data.fill;
-    if (f.bao) { if (S.tab !== 'fill') bao('📣 ' + f.bao, f.ms || 4000); return; }
-    S.fill = f; veNav();
-  }
-  if (e.source === khungThoai.contentWindow && e.data.doiThoai) {
-    const f = e.data.doiThoai;
-    if (f.bao) { if (S.tab !== 'thoai') bao(f.bao, f.ms || 6000); return; }
-    S.thoai = f; veNav();
+    if (f.bao) { if (S.tab !== 'fill') bao(f.bao.startsWith('💬') ? f.bao : '📣 ' + f.bao, f.ms || 4000); return; }
+    S.fill = { ...(S.fill || {}), ...f }; veNav();
   }
 });
 function moTab(t) {
   S.tab = t; S.view = null;
-  document.body.classList.toggle('mo-khung', t === 'fill' || t === 'thoai');
-  khung.classList.toggle('hien', t === 'fill'); khungThoai.classList.toggle('hien', t === 'thoai');
-  try { const w = khungThoai.contentWindow; if (w && w.daXem) w.daXem(t === 'thoai'); } catch (e) {}
+  document.body.classList.toggle('mo-khung', t === 'fill');
+  khung.classList.toggle('hien', t === 'fill');
+  try { const w = khung.contentWindow; if (w && w.daXem) w.daXem(t === 'fill'); } catch (e) {}
   ve.cu = null; ve(); window.scrollTo(0, 0);
 }
 const doiGhim = (id) => {

@@ -129,9 +129,7 @@
 </header>
 <div id="daiFill" role="button"></div>
 <main id="man"><div class="tt">Đang kiểm tra đăng nhập…</div></main>
-<iframe id="khungFill" class="khung" title="Fill đồ"></iframe>
-<iframe id="khungThoai" class="khung" title="Đối thoại"></iframe>
-<div class="bao" id="bao"></div>
+<iframe id="khungFill" class="khung" title="Fill đồ"></iframe><div class="bao" id="bao"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
@@ -150,7 +148,7 @@ const KQ = {
 };
 
 const sb = supabase.createClient(URL_KHO, KHOA_CONG_KHAI, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'quanbay-dang-nhap' } });
-const man = document.getElementById('man'), navEl = document.getElementById('nav'), khung = document.getElementById('khungFill'), khungThoai = document.getElementById('khungThoai');
+const man = document.getElementById('man'), navEl = document.getElementById('nav'), khung = document.getElementById('khungFill');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const tien = (n) => Number(n).toLocaleString('vi-VN') + 'đ';
 const gio = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -171,14 +169,13 @@ const caBep = () => !!S.ca && !!BEP[S.ca.vai_tro];
 // Bếp/quầy nước: theo ca. Hieu (quản lý) chưa vào ca bếp: tự chọn quầy để xem.
 const tramToi = () => caBep() ? S.ca.vai_tro : (S.ql ? S.xem : null);
 const coFill = () => caBep() || S.ql;
-// Đối thoại với phục vụ: chỉ bếp xèo / bếp căn (Hieu chốt 20/11)
-const coThoai = () => ['xeo', 'can'].includes(tramToi()) && (caBep() || S.ql);
 const coGoiNuoc = () => tramToi() === 'nuoc';
 function cacTab() {
   if (!tramToi()) return [];
-  return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : []), ...(coThoai() ? ['thoai'] : [])];
+  return ['don', 'ls', ...(coGoiNuoc() ? ['goi'] : []), ...(coFill() ? ['fill'] : [])];
 }
-const TAB = { don: ['🧾', 'Nhận đơn'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'], thoai: ['💬', 'Đối thoại'] };
+// Đối thoại phục vụ ↔ bếp nằm trong mục Fill đồ (Hieu chốt 20/11: gộp, 1 nút, chọn người nhận)
+const TAB = { don: ['🧾', 'Nhận đơn'], ls: ['🕘', 'Lịch sử'], goi: ['📝', 'Gọi nước'], fill: ['📣', 'Fill đồ'] };
 
 // ---------- tiện ích dữ liệu ----------
 const goc = (d) => d.goc_id ?? d.id;
@@ -215,10 +212,8 @@ async function giuMan() {
 }
 async function batDauCa() {
   batAm(); S.amBat = true; await giuMan(); chuongBep();
-  // Máy nhận fill (mẹ): bật luôn giọng đọc của mục Fill đồ – một nút cho cả hai
+  // Bật luôn giọng đọc của mục Fill đồ (máy mẹ: báo fill; bếp: tin phục vụ nhắn) – một nút cho cả hai
   try { const w = khung.contentWindow; if (S.fill && S.fill.canNghe && !S.fill.nghe && w && w.batDauNghe) w.batDauNghe(); } catch (e) {}
-  // Bếp: bật luôn tự đọc tin phục vụ nhắn (mục Đối thoại)
-  try { const w = khungThoai.contentWindow; if (S.thoai && S.thoai.canNghe && !S.thoai.nghe && w && w.batDauNghe) w.batDauNghe(); } catch (e) {}
   bao('🔔 Đã bật chuông + giữ màn hình sáng'); ve();
 }
 
@@ -297,7 +292,7 @@ function ve() {
   veDau();
   if (!S.nv) return;
   veNav(); veDaiFill();
-  if (S.tab === 'fill' || S.tab === 'thoai') return;
+  if (S.tab === 'fill') return;
   if (dangGo() || S.cham) { S.cho = true; return; }
   S.cho = false;
   const html = veNoi();
@@ -315,7 +310,7 @@ function veDau() {
 // Khung Fill đồ + dải báo fill nằm ngay dưới thanh trên (thanh trên cao thêm khi có dải mất mạng)
 function canhKhung() {
   const tren = document.querySelector('header').offsetHeight;
-  [khung, khungThoai].forEach(k => { k.style.top = tren + 'px'; k.style.height = Math.max(200, window.innerHeight - tren) + 'px'; });
+  khung.style.top = tren + 'px'; khung.style.height = Math.max(200, window.innerHeight - tren) + 'px';
   document.getElementById('daiFill').style.top = (tren + 8) + 'px';
 }
 window.addEventListener('resize', canhKhung);
@@ -348,10 +343,10 @@ function veNav() {
   const dem = (k) => {
     if (k === 'don') { const n = S.dong.filter(d => d.tram === t && d.trang_thai === 'moi').reduce((a, d) => a + d.so_luong, 0); return n ? `<span class="dem">${n}</span>` : ''; }
     if (k === 'fill' && S.fill) {
-      if (S.fill.nhan) return `<span class="dem">${S.fill.nhan}</span>`;
+      const n = (S.fill.nhan || 0) + (S.fill.tin || 0);
+      if (n) return `<span class="dem">${n}</span>`;
       if (S.fill.cua) return `<span class="dem cam">${S.fill.cua}</span>`;
     }
-    if (k === 'thoai' && S.thoai && S.thoai.chuaNghe) return `<span class="dem">${S.thoai.chuaNghe}</span>`;
     return '';
   };
   const h = tabs.map(k => `<button class="${S.tab === k ? 'chon' : ''}" data-tab="${k}"><span class="i">${TAB[k][0]}</span>${TAB[k][1]}${dem(k)}</button>`).join('');
@@ -466,19 +461,13 @@ async function rpc(ten, thamSo) {
 // ---------- mục Fill đồ: trang 6.5 nhúng, chạy ngầm ----------
 function napFill() {
   if (coFill() && !khung.dataset.nap) { khung.dataset.nap = '1'; khung.src = 'bai6-fill-do.html?nhung=1'; }
-  if (coThoai() && !khungThoai.dataset.nap) { khungThoai.dataset.nap = '1'; khungThoai.src = 'bai9-doi-thoai.html?nhung=1'; }
 }
 window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data) return;
   if (e.source === khung.contentWindow && e.data.fill) {
     const f = e.data.fill;
-    if (f.bao) { if (S.tab !== 'fill') bao('📣 ' + f.bao, f.ms || 4000); return; }   // câu báo của mục Fill (vd mẹ trả lời) khi đang ở mục khác
-    S.fill = f; veNav(); veDaiFill();
-  }
-  if (e.source === khungThoai.contentWindow && e.data.doiThoai) {
-    const f = e.data.doiThoai;
-    if (f.bao) { if (S.tab !== 'thoai') bao(f.bao, f.ms || 5000); return; }        // phục vụ nhắn: hiện chữ ở mục đang mở
-    S.thoai = f; veNav();
+    if (f.bao) { if (S.tab !== 'fill') bao(f.bao.startsWith('💬') ? f.bao : '📣 ' + f.bao, f.ms || 4000); return; }   // câu báo / tin nhắn khi đang ở mục khác
+    S.fill = { ...(S.fill || {}), ...f }; veNav(); veDaiFill();
   }
 });
 // Máy nhận fill (mẹ) đang ở mục khác mà có báo chưa nhận → dải to ở trên, chạm là mở Fill đồ
@@ -491,9 +480,9 @@ function veDaiFill() {
 document.getElementById('daiFill').onclick = () => { batAm(); moTab('fill'); };
 function moTab(t) {
   S.tab = t;
-  document.body.classList.toggle('mo-khung', t === 'fill' || t === 'thoai');
-  khung.classList.toggle('hien', t === 'fill'); khungThoai.classList.toggle('hien', t === 'thoai');
-  try { const w = khungThoai.contentWindow; if (w && w.daXem) w.daXem(t === 'thoai'); } catch (e) {}
+  document.body.classList.toggle('mo-khung', t === 'fill');
+  khung.classList.toggle('hien', t === 'fill');
+  try { const w = khung.contentWindow; if (w && w.daXem) w.daXem(t === 'fill'); } catch (e) {}
   ve.cu = null; ve(); window.scrollTo(0, 0);
 }
 

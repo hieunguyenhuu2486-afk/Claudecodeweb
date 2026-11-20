@@ -230,7 +230,7 @@ function ve() {
 }
 
 // Mở từ trang khác (vd ?ve=tam-het) → vào ca xong tự chuyển về trang đó
-const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'], 'don-mon': ['bai7-don-mon.html', 'Đơn món'], 'man-bep': ['bai8-man-bep.html', 'Màn bếp'], 'phuc-vu': ['bai9-phuc-vu.html', 'Màn phục vụ'], 'doi-thoai': ['bai9-doi-thoai.html', 'Đối thoại'] }[new URLSearchParams(location.search).get('ve')];
+const VE_TRANG = { 'tam-het': ['bai6-tam-het.html', 'Món tạm hết'], 'fill-do': ['bai6-fill-do.html', 'Fill đồ'], 'don-mon': ['bai7-don-mon.html', 'Đơn món'], 'man-bep': ['bai8-man-bep.html', 'Màn bếp'], 'phuc-vu': ['bai9-phuc-vu.html', 'Màn phục vụ'] }[new URLSearchParams(location.search).get('ve')];
 const VE = VE_TRANG && VE_TRANG[0];
 function quayVe() { if (!VE) return false; bao('Đã vào ca – đang chuyển sang trang ' + VE_TRANG[1] + '…'); setTimeout(() => location.href = VE, 800); return true; }
 
